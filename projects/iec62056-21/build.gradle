@@ -1,0 +1,16 @@
+
+def projectName = "OpenIEC62056-21"
+
+def jrxtxVersion = '1.0.1'
+
+dependencies {
+  compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+  compile group: 'org.openmuc', name: 'jrxtx', version: jrxtxVersion
+}
+
+jar {
+  manifest {
+    name = projectName
+    instruction 'Export-Package', '!*.internal.*,*'
+  }
+}

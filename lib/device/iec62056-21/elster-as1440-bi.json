@@ -1,0 +1,105 @@
+{
+    "name": "AS1440 (Import/Export)",
+    "category": "Energy meters",
+    "group": "Elster",
+    "description": "Energy Meter AS1440 Import/Export",
+    
+    "prefix": "name",
+    
+    "driver": "iec62056-21",
+    "devices": [
+        {
+            "description": "Energy Meter",
+            "settings": "baudrate:9600"
+        }
+    ],
+    
+    "options": [
+        {
+            "id": "serialPort",
+            "name": "Serial port",
+            "description": "The physical device address to uniquely identify a physical smart meter.<br><br><b>Example:</b><ol><li><b>Linux</b>: /dev/ttyS0 or /dev/ttyUSB0</li><li><b>Windows</b>: COM1</li></ol>",
+            "type": "text",
+            "mandatory": true,
+            "syntax": "deviceAddress"
+        },
+        {
+            "id": "address",
+            "name": "Device address",
+            "description": "The address to uniquely identify a device, representing an IEC62056-21 slave.<br>For many devices, this is a number that can be read off a label on the meter.<br><br><i>If left empty, a single meter can be addressed without an identifier.<i>",
+            "type": "text",
+            "mandatory": false,
+            "syntax": "deviceAddress"
+        }
+    ],
+    
+    "channels": [
+        {
+            "name": "import_energy",
+            "address": "1.8.0",
+            "logging": {"loggingInterval": 60000, "loggingMaxInterval": 180000},
+            "configs": {"samplingInterval": 60000, "unit": "kWh", "valueType":"DOUBLE"},
+            "processList": [
+                {
+                    "process": "log_to_feed",
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "import_energy"}
+                },
+                {
+                    "process": "kwh_to_power",
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "import_power"}
+                }
+            ]
+        },
+        {
+            "name": "export_energy",
+            "address": "2.8.0",
+            "logging": {"loggingInterval": 60000, "loggingMaxInterval": 180000},
+            "configs": {"samplingInterval": 60000, "unit": "kWh", "valueType":"DOUBLE"},
+            "processList": [
+                {
+                    "process": "log_to_feed",
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "export_energy"}
+                },
+                {
+                    "process": "kwh_to_power",
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "export_power"}
+                }
+            ]
+        }
+    ],
+    
+    "feeds": [
+        {
+            "name": "import_energy",
+            "tag": "Energy",
+            "type": "DataType::REALTIME",
+            "engine": "Engine::PHPTIMESERIES"
+        },
+        {
+            "name": "import_power",
+            "tag": "Power",
+            "type": "DataType::REALTIME",
+            "engine": "Engine::PHPTIMESERIES"
+        },
+        {
+            "name": "export_energy",
+            "tag": "Energy",
+            "type": "DataType::REALTIME",
+            "engine": "Engine::PHPTIMESERIES"
+        },
+        {
+            "name": "export_power",
+            "tag": "Power",
+            "type": "DataType::REALTIME",
+            "engine": "Engine::PHPTIMESERIES"
+        }
+    ],
+    
+    "syntax": {
+        "deviceAddress": {
+            "keyValue": true,
+            "assignement": ":",
+            "separator": ","
+        }
+    }
+}

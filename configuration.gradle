@@ -1,0 +1,71 @@
+project.ext {
+
+  cfgVersion = '0.1.0'
+
+  cfgGroup = "org.openmuc"
+
+  cfgCopyDependencies = false
+
+  cfgCopyToRoot = false
+
+  javaProjects = subprojects
+
+  jarDefaultImportPackageVersion = ";version=0"
+
+  distributionProjects = subprojects.findAll {
+    it.getPath() == ":iec62056-21" ||
+    it.getPath() == ":openmuc-driver-iec62056-21"
+  }
+
+  docProjects = distributionProjects.findAll {
+    it.getPath() == ":iec62056-21"
+  }
+
+}
+
+configure(javaProjects) {
+  apply plugin: "java"
+  apply plugin: "maven"
+}
+
+tasks.withType(Tar) {
+
+  into(project.name) {
+
+    from("./") {
+      include "build.gradle"
+      include "configuration.gradle"
+      include "LICENSE**"
+      include "gradle/wrapper/**"
+      include "gradlew"
+      include "gradlew.bat"
+      include "build/libs/**"
+      include "dependencies/**"
+
+      exclude "**/projects/**/bin"
+      exclude "**/projects/**/build"
+      exclude "**/projects/**/.settings"
+      exclude "**/projects/**/.project"
+      exclude "**/projects/**/.classpath"
+      exclude "**/projects/**/.gradle"
+
+      for (Project myproject: distributionProjects) {
+        include myproject.getProjectDir().toString().substring((int)(getProjectDir().toString().size() + 1)) + "/**";
+      }
+    }
+
+    if (name.equals("tar") ){
+      exclude "**/dependencies/**/src"
+    }
+
+    from("./build/") {
+      include "settings.gradle"
+    }
+  }
+
+  into(project.name + "/doc/") {
+    from("./build/docs/") {
+      include "javadoc/**"
+    }
+  }
+}
