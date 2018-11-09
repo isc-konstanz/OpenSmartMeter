@@ -6,8 +6,6 @@ project.ext {
 
   cfgCopyDependencies = false
 
-  cfgCopyToRoot = false
-
   javaProjects = subprojects
 
   jarDefaultImportPackageVersion = ";version=0"
@@ -32,40 +30,26 @@ tasks.withType(Tar) {
 
   into(project.name) {
 
+    from("build") {
+      include "lib/**"
+    }
+
     from("./") {
-      include "build.gradle"
-      include "configuration.gradle"
       include "LICENSE**"
-      include "gradle/wrapper/**"
-      include "gradlew"
-      include "gradlew.bat"
-      include "build/libs/**"
+      include "NOTICE**"
+      include "lib/**"
+      include "conf/**"
       include "dependencies/**"
-
-      exclude "**/projects/**/bin"
-      exclude "**/projects/**/build"
-      exclude "**/projects/**/.settings"
-      exclude "**/projects/**/.project"
-      exclude "**/projects/**/.classpath"
-      exclude "**/projects/**/.gradle"
-
-      for (Project myproject: distributionProjects) {
-        include myproject.getProjectDir().toString().substring((int)(getProjectDir().toString().size() + 1)) + "/**";
-      }
     }
 
-    if (name.equals("tar") ){
+    for (Project myproject: distributionProjects) {
+      from (myproject.getProjectDir().toString()) {
+        include "dependencies/**"
+	  }
+    }
+
+    if (name.equals("tar")) {
       exclude "**/dependencies/**/src"
-    }
-
-    from("./build/") {
-      include "settings.gradle"
-    }
-  }
-
-  into(project.name + "/doc/") {
-    from("./build/docs/") {
-      include "javadoc/**"
     }
   }
 }

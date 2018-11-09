@@ -41,10 +41,3 @@ local.properties
 *.gradle/
 build/
 /build/
-!/build/
-/build/*
-!/build/docs
-!/build/libs
-/build/libs/*
-!/build/libs/iec62056-21*
-!/build/libs/openmuc-driver-*

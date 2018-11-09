@@ -58,23 +58,23 @@ configure(javaProjects) {
     jacoco group: 'org.jacoco', name: 'org.jacoco.ant', version: '0.7.9', classifier: 'nodeps'
     jacocoRuntime group: 'org.jacoco', name: 'org.jacoco.agent', version: '0.7.9', classifier: 'runtime'
   }
-  
+
   jar {
     manifest {
       version = project.version.replace("-",".");
     }
   }
-  
+
   task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = "sources"
     from sourceSets.main.allSource
   }
-  
+
   task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = "javadoc"
     from javadoc.destinationDir
   }
-  
+
   task instrument {
     ext.outputDir = buildDir.path + '/classes-instrumented'
     doLast {
@@ -96,9 +96,9 @@ configure(javaProjects) {
       }
     }
   }
-  
+
   instrument.dependsOn classes
-  
+
   gradle.taskGraph.whenReady { graph ->
     if (graph.hasTask(instrument)) {
       tasks.withType(Test) {
@@ -109,7 +109,7 @@ configure(javaProjects) {
       }
     }
   }
-  
+
   task report {
     doLast {
       if (!file(buildDir.path + '/jacoco/tests.exec').exists()) {
@@ -134,33 +134,23 @@ configure(javaProjects) {
     }
     }
   }
-  
+
   report.dependsOn instrument
   report.dependsOn test
-  
+
   task jarAll(type: Copy) {
     dependsOn(configurations.default.getAllArtifacts().getBuildDependencies())
 
-    //only the jar file created:
+    // Include the jar file created, as well as all artifacts:
     from configurations.default.getAllArtifacts().getFiles()
-    if (cfgCopyToRoot) {
-      //includes all artifacts for distribution:
-      from sourcesJar
-      from javadocJar
-      
-      if (cfgCopyDependencies) {
-        //includes all the dependencies:
-        from configurations.default
-      }
-      into rootDir.getPath() + "/build/libs"
+    from sourcesJar
+    from javadocJar
+
+    if (cfgCopyDependencies) {
+      // Includes all the dependencies:
+      from configurations.default
     }
-    else {
-      if (cfgCopyDependencies) {
-        //includes all the dependencies:
-        from configurations.default
-      }
-      into "build/libs-all"
-    }
+    into rootDir.getPath() + "/build/lib"
   }
 
   build.dependsOn {jarAll}
@@ -176,6 +166,7 @@ configure(javaProjects) {
   javadoc {
     exclude "**/internal/**"
     exclude "**/java-gen/**"
+    exclude "**/app/**"
   }
 }
 
@@ -189,7 +180,7 @@ task javadocAll(type: Javadoc) {
   exclude "**/java-gen/**"
   exclude "**/app/**"
 
-  destinationDir = new File(buildDir, "docs/javadoc")
+  destinationDir = new File(rootDir, "doc/javadoc")
 
   classpath = files(distributionProjects.collect { project ->
     project.sourceSets.main.compileClasspath })
@@ -198,61 +189,18 @@ task javadocAll(type: Javadoc) {
     project.sourceSets.main.output })
 }
 
-
-task writeSettings {
-  doLast {
-    Writer out = new OutputStreamWriter(new FileOutputStream("build/settings.gradle"));
-    out.write("include ");
-    boolean first = true;
-    for (Project myproject: distributionProjects) {
-      if (myproject.getProjectDir().equals(getProjectDir())) {
-        continue;  
-      }
-      if (first) {
-        first = false;
-      }
-      else {
-        out.write ", ";
-      }
-    }
-    out .write "\n\n";
-
-    for (Project myproject: distributionProjects) {
-      if (myproject.getProjectDir().equals(getProjectDir())) {
-        continue;
-      }
-      println myproject.name
-      out.write 'project(":' + myproject.name + '").projectDir = file("' + myproject.getProjectDir().toString().substring((int)(getProjectDir().toString().size() + 1)) + '")\n';
-    }
-
-    out.close();
-  }
+task (tar, type: Tar) {
+  archiveName = project.name + "-" + project.version + ".tar.gz"
+  compression = Compression.GZIP
+  destinationDir = file("build/distribution/")
 }
 
-task buildDistProjects {
-  dependsOn(distributionProjects.build)
-}
-
-tasks.withType(Tar) {
-
-  dependsOn(writeSettings)
+task release {
   dependsOn(distributionProjects.build)
   dependsOn(javadocAll)
-
-  compression = Compression.GZIP
-  
-  destinationDir = file("build/distributions/")
-}
-
-task (tar, type: Tar) {
-  archiveName = project.name + "-" + project.version + ".tgz"
-}
-
-task (tarFull, type: Tar) {
   dependsOn(tar)
-  archiveName = project.name + "-" + project.version + "_full.tgz"
 }
 
 subprojects {
-    task allDeps(type: DependencyReportTask) {}
+  task allDeps(type: DependencyReportTask) {}
 }

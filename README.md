@@ -1,6 +1,6 @@
 ![emonmuc header](doc/img/emonmuc-logo.png)
 
-This project implements a communication protocol as part of emonmuc (**e**nergy **mon**itoring **m**ulty **u**tility **c**ommunication), an *unofficial fork* of the open-source project [OpenMUC](https://www.openmuc.org/), a software framework based on Java and OSGi, that simplifies the development of customized *monitoring, logging and control* systems.
+This project implements a communication protocol as part of [emonmuc](https://github.com/isc-konstanz/emonmuc/) (**e**nergy **mon**itoring **m**ulty **u**tility **c**ommunication), based on the open-source project [OpenMUC](https://www.openmuc.org/), a software framework based on Java and OSGi, that simplifies the development of customized *monitoring, logging and control* systems.
 
 
 ----------
@@ -12,37 +12,23 @@ This project implements a communication protocol as part of emonmuc (**e**nergy 
 
 ## 1 Installation
 
-The installation guide was documented for Linux based platforms, but further guides may follow.
+To setup this protocol driver, [emonmuc](https://github.com/isc-konstanz/emonmuc/) needs to be installed. To do so, a comprehensive guide is provided on the projects GitHub page.
 
-To setup this protocol driver, **[emonmuc](https://github.com/isc-konstanz/emonmuc/)** needs to be installed. To do so, a comprehensive guide is provided on the projects GitHub page.
-
-With emonmuc being installed, simply copy the driver jarfile from the projects *build/lib*, to the *bundles-available* directory, by default located at `/opt/emonmuc/bundles-available`. For example:
+With emonmuc being installed, the driver may be enabled
 
 ~~~
-cp ~/OpenIEC62056-21/build/libs/openmuc-driver-iec62056-21* /opt/emonmuc/bundles-available/
-~~~
-
-Now, the driver can be enabled
-
-~~~
-emonmuc enable driver iec62056-21
+emonmuc install iec62056-21
 ~~~
 
 To disable the driver, use
 
 ~~~
-emonmuc disable driver iec62056-21
+emonmuc remove iec62056-21
 ~~~
 
+This shell command will set up the driver, as instructed in the [setup script](setup.sh).  
+If there is the need to manually install the driver, the separate [installation guide](doc/LinuxInstall.md) may be followed.
 
-### 1.1 Device templates
-
-Next, device template files are provided by this project, to ease up the configuration of some new hardware devices.  
-Those can be found at *lib/device/iec62056-21* and should be copied to the corresponding directory in the emonmuc root:
-
-~~~
-cp -R ~/OpenIEC62056-21/lib/device/iec62056-21 /opt/emonmuc/lib/device/iec62056-21
-~~~
 
 
 ----------
