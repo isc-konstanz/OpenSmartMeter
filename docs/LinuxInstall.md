@@ -13,7 +13,7 @@ To install the OSGi bundle, simply download the latest release tarball and move 
 ~~~shell
 wget --quiet --show-progress https://github.com/isc-konstanz/OpenIEC62056-21/releases/download/v1.0.0/OpenIEC62056-21-1.0.0.tar.gz
 tar -xzf OpenIEC62056-21-1.0.0.tar.gz
-mv ./OpenIEC62056-21/lib/openmuc-driver-iec62056-21-1.0.0.jar /opt/emonmuc/bundles/
+mv ./OpenIEC62056-21/libs/openmuc-driver-iec62056-21-1.0.0.jar /opt/emonmuc/bundles/
 ~~~
 
 Afterwards restart the framework, for the driver to be started
@@ -29,7 +29,7 @@ Next, device template files are provided by this project, to ease up the configu
 Those can be found at *lib/device/iec62056-21* and should be moved to the corresponding directory in the emonmuc root:
 
 ~~~shell
-mv ./OpenIEC62056-21/lib/device/iec62056-21 /opt/emonmuc/lib/device/
+mv ./OpenIEC62056-21/libs/device/iec62056-21 /opt/emonmuc/lib/device/
 ~~~
 
 
