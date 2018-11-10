@@ -171,11 +171,11 @@ configure(javaProjects) {
 }
 
 task javadocAll(type: Javadoc) {
+  delete rootDir.getPath() + "/docs/javadoc"
 
   source docProjects.collect {
     project -> project.sourceSets.main.allJava
   }
-
   exclude "**/internal/**"
   exclude "**/java-gen/**"
   exclude "**/app/**"
