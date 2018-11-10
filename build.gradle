@@ -150,7 +150,7 @@ configure(javaProjects) {
       // Includes all the dependencies:
       from configurations.default
     }
-    into rootDir.getPath() + "/build/lib"
+    into rootDir.getPath() + "/build/libs"
   }
 
   build.dependsOn {jarAll}
@@ -180,7 +180,7 @@ task javadocAll(type: Javadoc) {
   exclude "**/java-gen/**"
   exclude "**/app/**"
 
-  destinationDir = new File(rootDir, "doc/javadoc")
+  destinationDir = new File(rootDir, "docs/javadoc")
 
   classpath = files(distributionProjects.collect { project ->
     project.sourceSets.main.compileClasspath })
