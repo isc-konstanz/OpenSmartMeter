@@ -192,7 +192,7 @@ task javadocAll(type: Javadoc) {
 task (tar, type: Tar) {
   archiveName = project.name + "-" + project.version + ".tar.gz"
   compression = Compression.GZIP
-  destinationDir = file("build/distribution/")
+  destinationDir = file("build/distributions/")
 }
 
 task release {
