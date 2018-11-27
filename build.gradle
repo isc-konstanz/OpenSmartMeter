@@ -170,9 +170,12 @@ configure(javaProjects) {
   }
 }
 
-task javadocAll(type: Javadoc) {
+task javadocClean(type: Delete) {
   delete rootDir.getPath() + "/docs/javadoc"
+}
 
+task javadocAll(type: Javadoc) {
+  dependsOn(javadocClean)
   source docProjects.collect {
     project -> project.sourceSets.main.allJava
   }

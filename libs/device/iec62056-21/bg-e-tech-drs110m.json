@@ -4,8 +4,6 @@
     "group": "B+G E-TECH",
     "description": "<b>Energy Meter DRS110M</b>:<br>Current: 10(100)A<br>Voltage : 230V<br>50(60)Hz",
     
-    "prefix": "name",
-    
     "driver": "iec62056-21",
     "devices": [
         {
@@ -67,6 +65,7 @@
         }
     ],
     
+    "prefix": "node",
     "syntax": {
         "deviceAddress": {
             "keyValue": true,

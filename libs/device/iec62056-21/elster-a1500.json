@@ -4,8 +4,6 @@
     "group": "Elster",
     "description": "Energy Meter A1500",
     
-    "prefix": "name",
-    
     "driver": "iec62056-21",
     "devices": [
         {
@@ -67,6 +65,7 @@
         }
     ],
     
+    "prefix": "node",
     "syntax": {
         "deviceAddress": {
             "keyValue": true,
