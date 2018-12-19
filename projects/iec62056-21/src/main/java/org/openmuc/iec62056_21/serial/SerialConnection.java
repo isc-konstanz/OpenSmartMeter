@@ -25,18 +25,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeoutException;
 
-import gnu.io.CommPort;
-import gnu.io.CommPortIdentifier;
-import gnu.io.NoSuchPortException;
-import gnu.io.PortInUseException;
-import gnu.io.SerialPort;
-import gnu.io.UnsupportedCommOperationException;
+import org.openmuc.jrxtx.SerialPort;
+import org.openmuc.jrxtx.SerialPortBuilder;
 
 
-@SuppressWarnings("deprecation")
 public class SerialConnection {
-    private static final String APP_NAME = "org.openmuc.iec62056.SERIAL";
-    
     private static final long SLEEP_TIME = 10L;
 
     private SerialPort serialPort;
@@ -68,8 +61,15 @@ public class SerialConnection {
     public void open() throws IOException {
         if (isClosed()) {
             try {
-                serialPort = acquireSerialPort(settings.getPort());
-
+            	serialPort = SerialPortBuilder.newBuilder(settings.getPort())
+                        .setDataBits(settings.getDatabits())
+                        .setStopBits(settings.getStopbits())
+                        .setParity(settings.getParity())
+                        .setBaudRate(settings.getBaudrate())
+                        .build();
+                
+                serialPort.setSerialPortTimeout(timeout);
+                
             } catch (IOException e) {
                 if (serialPort != null) {
                     serialPort.close();
@@ -80,7 +80,7 @@ public class SerialConnection {
         closed = false;
     }
 
-    public void close() {
+    public void close() throws IOException {
         if (serialPort != null) {
             serialPort.close();
         }
@@ -143,62 +143,14 @@ public class SerialConnection {
         throw new TimeoutException("Timed out, while reading from the serial port");
     }
 
-    private SerialPort acquireSerialPort(String serialPortName) throws IOException {
-        CommPortIdentifier portIdentifier;
-        try {
-            portIdentifier = CommPortIdentifier.getPortIdentifier(serialPortName);
-            
-        } catch (NoSuchPortException e) {
-            throw new IOException("The specified port does not exist", e);
-        }
-
-        CommPort commPort;
-        try {
-            commPort = portIdentifier.open(APP_NAME, 2000);
-            
-        } catch (PortInUseException e) {
-            throw new IOException("The specified port is already in use", e);
-        }
-
-        if (!(commPort instanceof SerialPort)) {
-            // may never be the case
-            commPort.close();
-            throw new IOException("The specified CommPort is not a serial port");
-        }
-
-        try {
-            SerialPort serialPort = (SerialPort) commPort;
-            serialPort.setSerialPortParams(settings.getBaudrate(), settings.getDatabits(), settings.getStopbits(), settings.getParity());
-            
-            return serialPort;
-            
-        } catch (UnsupportedCommOperationException e) {
-            if (commPort != null) {
-                commPort.close();
-            }
-            throw new IOException("Unable to set the baud rate or other serial port parameters", e);
-        }
+    public void setBaudRate(int baudrate) throws IOException {
+    	if (serialPort.getBaudRate() != baudrate) {
+    		serialPort.setBaudRate(baudrate);
+    	}
     }
 
-    public void setParameters(int baudrate, int dataBits, int stopBits, int parity) throws IOException {
-        if (serialPort.getBaudRate() != baudrate ||
-                serialPort.getDataBits() != dataBits || serialPort.getStopBits() != stopBits || serialPort.getParity() != parity) {
-
-            try {
-                serialPort.setSerialPortParams(baudrate, dataBits, stopBits, parity);
-                
-            } catch (UnsupportedCommOperationException e) {
-                throw new IOException("Unable to set the baud rate or other serial port parameters", e);
-            }
-        }
-    }
-
-    public void setParameters(int baudrate) throws IOException {
-        setParameters(baudrate, settings.getDatabits(), settings.getStopbits(), settings.getParity());
-    }
-
-    public void resetParameters() throws IOException {
-        setParameters(settings.getBaudrate(), settings.getDatabits(), settings.getStopbits(), settings.getParity());
+    public void resetBaudRate() throws IOException {
+        setBaudRate(settings.getBaudrate());
     }
 
 }

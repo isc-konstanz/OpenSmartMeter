@@ -140,7 +140,12 @@ public class Iec62056Connection {
      */
     public boolean close() {
         if (!serial.isClosed()) {
-            serial.close();
+            try {
+				serial.close();
+				
+			} catch (IOException e) {
+				logger.error("Error while closing serial connection: {}", e.getMessage());
+			}
         }
         return true;
     }
@@ -188,7 +193,7 @@ public class Iec62056Connection {
         List<DataSet> dataSets = new ArrayList<DataSet>();
         
         // Set serial parameters configured as default for this device connection
-        serial.resetParameters();
+        serial.resetBaudRate();
         serial.setTimeout(settings.getTimeout());
 
         byte[] identification = null;
@@ -298,7 +303,7 @@ public class Iec62056Connection {
                 Thread.sleep(settings.getBaudrateChangeDelay());
             } catch (InterruptedException e) {
             }
-            serial.setParameters(baudrate);
+            serial.setBaudRate(baudrate);
         }
         
         if (settings.getPassword() != null) {

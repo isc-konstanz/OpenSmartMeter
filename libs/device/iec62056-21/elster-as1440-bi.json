@@ -1,17 +1,17 @@
 {
     "name": "AS1440 (Import/Export)",
-    "category": "Energy meters",
+    "category": "Meter",
     "group": "Elster",
     "description": "Energy Meter AS1440 Import/Export",
-    
+
     "driver": "iec62056-21",
     "devices": [
         {
-            "description": "Energy Meter",
+            "description": "AS1440 Energy Meter",
             "settings": "baudrate:9600"
         }
     ],
-    
+
     "options": [
         {
             "id": "serialPort",
@@ -30,75 +30,70 @@
             "syntax": "deviceAddress"
         }
     ],
-    
+
     "channels": [
         {
-            "name": "import_energy",
+            "name": "<node>*import",
             "address": "1.8.0",
             "logging": {"loggingInterval": 60000, "loggingMaxInterval": 180000},
-            "configs": {"samplingInterval": 60000, "unit": "kWh", "valueType":"DOUBLE"},
+            "configs": {"samplingInterval": 60000, "valueType":"DOUBLE", "unit": "kWh"},
             "processList": [
                 {
                     "process": "log_to_feed",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "import_energy"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "<node>*import", "tag": "Energy"}
                 },
                 {
                     "process": "kwh_to_power",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "import_power"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "<node>*import", "tag": "Power"}
                 }
             ]
         },
         {
-            "name": "export_energy",
+            "name": "<node>*export",
             "address": "2.8.0",
             "logging": {"loggingInterval": 60000, "loggingMaxInterval": 180000},
-            "configs": {"samplingInterval": 60000, "unit": "kWh", "valueType":"DOUBLE"},
+            "configs": {"samplingInterval": 60000, "valueType":"DOUBLE", "unit": "kWh"},
             "processList": [
                 {
                     "process": "log_to_feed",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "export_energy"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "<node>*export", "tag": "Energy"}
                 },
                 {
                     "process": "kwh_to_power",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "export_power"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "<node>*export", "tag": "Power"}
                 }
             ]
         }
     ],
-    
+
     "feeds": [
         {
-            "name": "import_energy",
+            "name": "<node>*import",
             "tag": "Energy",
             "type": "DataType::REALTIME",
-            "engine": "Engine::PHPTIMESERIES"
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "kWh"
         },
         {
-            "name": "import_power",
+            "name": "<node>*import",
             "tag": "Power",
             "type": "DataType::REALTIME",
-            "engine": "Engine::PHPTIMESERIES"
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "W"
         },
         {
-            "name": "export_energy",
+            "name": "<node>*export",
             "tag": "Energy",
             "type": "DataType::REALTIME",
-            "engine": "Engine::PHPTIMESERIES"
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "kWh"
         },
         {
-            "name": "export_power",
+            "name": "<node>*export",
             "tag": "Power",
             "type": "DataType::REALTIME",
-            "engine": "Engine::PHPTIMESERIES"
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "W"
         }
-    ],
-    
-    "prefix": "node",
-    "syntax": {
-        "deviceAddress": {
-            "keyValue": true,
-            "assignement": ":",
-            "separator": ","
-        }
-    }
+    ]
 }

@@ -20,6 +20,9 @@
  */
 package org.openmuc.iec62056_21.serial;
 
+import org.openmuc.jrxtx.DataBits;
+import org.openmuc.jrxtx.Parity;
+import org.openmuc.jrxtx.StopBits;
 
 public class SerialSettings {
 
@@ -48,16 +51,49 @@ public class SerialSettings {
         return baudrate;
     }
 
-    public int getDatabits() {
-        return databits;
+    public DataBits getDatabits() {
+    	switch (databits) {
+	    case 5:
+	    	return DataBits.DATABITS_5;
+	    case 6:
+	    	return DataBits.DATABITS_6;
+	    case 7:
+	    	return DataBits.DATABITS_7;
+	    case 8:
+	    	return DataBits.DATABITS_8;
+	    default:
+	    	return DataBits.DATABITS_7;
+    	}
     }
 
-    public int getStopbits() {
-        return stopbits;
+    public StopBits getStopbits() {
+    	switch (stopbits) {
+	    case 1:
+	    	return StopBits.STOPBITS_1;
+	    case 3:
+	    	return StopBits.STOPBITS_1_5;
+	    case 2:
+	    	return StopBits.STOPBITS_2;
+	    default:
+	    	return StopBits.STOPBITS_1;
+    	}
     }
 
-    public int getParity() {
-        return parity;
+    public Parity getParity() {
+    	switch (parity) {
+	    case 0:
+	    	return Parity.NONE;
+	    case 1:
+	    	return Parity.ODD;
+	    case 2:
+	    	return Parity.EVEN;
+	    case 3:
+	    	return Parity.MARK;
+	    case 4:
+	    	return Parity.SPACE;
+	    default:
+	    	return Parity.EVEN;
+    	}
     }
 
 }

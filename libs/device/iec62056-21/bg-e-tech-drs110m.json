@@ -1,17 +1,17 @@
 {
     "name": "DRS110M",
-    "category": "Energy meters",
+    "category": "Meter",
     "group": "B+G E-TECH",
     "description": "<b>Energy Meter DRS110M</b>:<br>Current: 10(100)A<br>Voltage : 230V<br>50(60)Hz",
-    
+
     "driver": "iec62056-21",
     "devices": [
         {
-            "description": "Energy Meter",
+            "description": "DRS110M Energy Meter",
             "settings": "password:00000000,baudrate:9600"
         }
     ],
-    
+
     "options": [
         {
             "id": "serialPort",
@@ -30,47 +30,40 @@
             "syntax": "deviceAddress"
         }
     ],
-    
+
     "channels": [
         {
-            "name": "energy",
+            "name": "<node>*energy",
             "address": "00000010",
             "logging": {"loggingInterval": 60000, "loggingMaxInterval": 180000},
-            "configs": {"samplingInterval": 60000, "scalingFactor": 0.001, "unit": "kWh", "valueType":"DOUBLE"},
+            "configs": {"samplingInterval": 60000, "scalingFactor": 0.001, "valueType":"DOUBLE", "unit": "kWh"},
             "processList": [
                 {
                     "process": "log_to_feed",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "energy"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "<node>", "tag": "Energy"}
                 },
                 {
                     "process": "kwh_to_power",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "power"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "<node>", "tag": "Power"}
                 }
             ]
         }
     ],
-    
+
     "feeds": [
         {
-            "name": "energy",
+            "name": "<node>",
             "tag": "Energy",
             "type": "DataType::REALTIME",
-            "engine": "Engine::PHPTIMESERIES"
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "kWh"
         },
         {
-            "name": "power",
+            "name": "<node>",
             "tag": "Power",
             "type": "DataType::REALTIME",
-            "engine": "Engine::PHPTIMESERIES"
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "W"
         }
-    ],
-    
-    "prefix": "node",
-    "syntax": {
-        "deviceAddress": {
-            "keyValue": true,
-            "assignement": ":",
-            "separator": ","
-        }
-    }
+    ]
 }

@@ -1,17 +1,17 @@
 {
     "name": "A1500",
-    "category": "Energy meters",
+    "category": "Meter",
     "group": "Elster",
     "description": "Energy Meter A1500",
-    
+
     "driver": "iec62056-21",
     "devices": [
         {
-            "description": "Energy Meter",
+            "description": "A1500 Energy Meter",
             "settings": "baudrate:9600"
         }
     ],
-    
+
     "options": [
         {
             "id": "serialPort",
@@ -30,47 +30,40 @@
             "syntax": "deviceAddress"
         }
     ],
-    
+
     "channels": [
         {
-            "name": "energy",
+            "name": "<node>",
             "address": "1.8.0",
             "logging": {"loggingInterval": 60000, "loggingMaxInterval": 180000},
-            "configs": {"samplingInterval": 60000, "unit": "kWh", "valueType":"DOUBLE"},
+            "configs": {"samplingInterval": 60000, "valueType":"DOUBLE", "unit": "kWh"},
             "processList": [
                 {
                     "process": "log_to_feed",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "energy"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "<node>", "tag": "Energy"}
                 },
                 {
                     "process": "kwh_to_power",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "power"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "<node>", "tag": "Power"}
                 }
             ]
         }
     ],
-    
+
     "feeds": [
         {
-            "name": "energy",
+            "name": "<node>",
             "tag": "Energy",
             "type": "DataType::REALTIME",
-            "engine": "Engine::PHPTIMESERIES"
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "kWh"
         },
         {
-            "name": "power",
+            "name": "<node>",
             "tag": "Power",
             "type": "DataType::REALTIME",
-            "engine": "Engine::PHPTIMESERIES"
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "W"
         }
-    ],
-    
-    "prefix": "node",
-    "syntax": {
-        "deviceAddress": {
-            "keyValue": true,
-            "assignement": ":",
-            "separator": ","
-        }
-    }
+    ]
 }
