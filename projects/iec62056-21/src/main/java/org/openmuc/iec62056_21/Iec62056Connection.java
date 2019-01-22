@@ -98,6 +98,18 @@ public class Iec62056Connection {
     }
 
     /**
+     * Creates a Connection object. You must call <code>open()</code> before
+     * calling <code>read()</code> in order to read data. The timeout is set by
+     * default to 5s.
+     * 
+     * @param serial
+     *            serial port connection object.
+     */
+    public Iec62056Connection(SerialConnection serial) {
+        this.serial = serial;
+    }
+
+    /**
      * Sets the maximum time in ms to wait for new data from the remote device.
      * A timeout of zero is interpreted as an infinite timeout.
      * 
@@ -195,7 +207,7 @@ public class Iec62056Connection {
         // Set serial parameters configured as default for this device connection
         serial.resetBaudRate();
         serial.setTimeout(settings.getTimeout());
-
+        
         byte[] identification = null;
         if (settings.hasHandshake()) {
             identification = initiateWithHandshake(settings);
@@ -210,7 +222,7 @@ public class Iec62056Connection {
         }
         dataSets.add(new DataSet(
                 new String(identification, offset + 5, identification.length - offset - 7, charset), "", ""));
-
+        
         if (settings.getPassword() != null) {
             authenticateWithPassword(settings.getPassword());
             
@@ -264,10 +276,13 @@ public class Iec62056Connection {
     private byte[] initiateWithHandshake(Iec62056Settings settings) throws IOException, TimeoutException {
         
         byte[] response = initiateCommunication(settings.getAddress());
-
+        
         int offset = 0;
         if (settings.hasEchoHandling()) {
             offset = 5;
+        }
+        if (response.length <= offset + 4) {
+        	throw new IOException("Invalid response while initiating handshake: " + byteToAscii(response));
         }
         char baudRateSetting = (char) response[offset + 4];
         

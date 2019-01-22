@@ -41,16 +41,17 @@ import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
 import org.openmuc.iec62056_21.DataSet;
 import org.openmuc.iec62056_21.Iec62056Settings;
+import org.openmuc.iec62056_21.serial.SerialConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Iec62056Connection extends org.openmuc.iec62056_21.Iec62056Connection implements Connection {
 	private final static Logger logger = LoggerFactory.getLogger(Iec62056Connection.class);
-	
+
 	private Iec62056Settings settings;
 
-    public Iec62056Connection(Iec62056Settings settings) {
-		super(settings.getSerialSettings());
+    public Iec62056Connection(Iec62056Settings settings, SerialConnection serial) {
+		super(serial);
 		this.settings = settings;
 	}
 
@@ -92,10 +93,8 @@ public class Iec62056Connection extends org.openmuc.iec62056_21.Iec62056Connecti
         for (ChannelRecordContainer container : containers) {
             containersById.put(container.getChannelAddress(), container);
         }
-        
-        List<DataSet> dataSets = null;
         try {
-            dataSets = read(settings, containersById.keySet());
+        	List<DataSet> dataSets = read(settings, containersById.keySet());
             if (dataSets == null) {
                 throw new TimeoutException("No data sets received.");
             }
@@ -114,18 +113,15 @@ public class Iec62056Connection extends org.openmuc.iec62056_21.Iec62056Connecti
 	                }
 	            }
 	        }
-        } catch (IOException | TimeoutException e) {
-            logger.debug("Reading from device failed: " + e);
-            
-            Flag flag;
-            if (e instanceof TimeoutException) {
-            	flag = Flag.TIMEOUT;
-            }
-            else {
-            	flag = Flag.DRIVER_ERROR_READ_FAILURE;
-            }
+        } catch (TimeoutException e) {
+            logger.debug("Reading from device timed out");
             for (ChannelRecordContainer container : containers) {
-                container.setRecord(new Record(flag));
+                container.setRecord(new Record(Flag.TIMEOUT));
+            }
+        } catch (IOException e) {
+            logger.debug("Reading from device failed: " + e);
+            for (ChannelRecordContainer container : containers) {
+                container.setRecord(new Record(Flag.DRIVER_ERROR_READ_FAILURE));
             }
             close();
         	

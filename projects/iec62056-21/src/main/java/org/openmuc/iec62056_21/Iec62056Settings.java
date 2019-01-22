@@ -20,14 +20,10 @@
  */
 package org.openmuc.iec62056_21;
 
-import org.openmuc.iec62056_21.serial.SerialSettings;
-
 public class Iec62056Settings {
 
-    private final SerialSettings serial;
-
     private final String address;
-    
+
     private String password = null;
 
     private int timeout = 5000;
@@ -42,9 +38,7 @@ public class Iec62056Settings {
 
     private Integer baudrateMax = null;
 
-    public Iec62056Settings(SerialSettings settings, String address) {
-        this.serial = settings;
-        
+    public Iec62056Settings(String address) {
         // Address strings length must by divisible by 4
         String zeros = "";
         for (int i=0; i<address.length() % 4; i++) {
@@ -53,16 +47,8 @@ public class Iec62056Settings {
         this.address = zeros + address;
     }
 
-    public Iec62056Settings(SerialSettings settings) {
-        this(settings, "");
-    }
-
-    public SerialSettings getSerialSettings() {
-        return serial;
-    }
-
-    public String getSerialPort() {
-        return serial.getPort();
+    public Iec62056Settings() {
+        this("");
     }
 
     public String getAddress() {
