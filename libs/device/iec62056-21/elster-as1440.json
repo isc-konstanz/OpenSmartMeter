@@ -7,6 +7,7 @@
     "driver": "iec62056-21",
     "devices": [
         {
+		    "name": "serial<address>",
             "description": "AS1440 Energy Meter",
             "settings": "baudrate:9600"
         }
@@ -28,6 +29,14 @@
             "type": "text",
             "mandatory": false,
             "syntax": "deviceAddress"
+        },
+        {
+            "id": "timeOffset",
+            "name": "Time offset",
+            "description": "The time waited in milliseconds, until the serial connection will be used. Necessary for multiple meters on the same line.",
+            "type": "text",
+            "default": 0,
+            "mandatory": false
         }
     ],
 
@@ -35,16 +44,16 @@
         {
             "name": "<node>",
             "address": "1.8.0",
-            "logging": {"loggingInterval": 60000, "loggingMaxInterval": 180000},
-            "configs": {"samplingInterval": 60000, "valueType":"DOUBLE", "unit": "kWh"},
+            "logging": {"loggingInterval": 60000, "loggingMaxInterval": 900000 },
+            "configs": {"samplingInterval": 60000, "samplingTimeOffset": "<timeOffset>", "valueType":"DOUBLE", "unit": "kWh"},
             "processList": [
                 {
                     "process": "log_to_feed",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "<node>", "tag": "Energy"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Energy", "tag": "<name>"}
                 },
                 {
                     "process": "kwh_to_power",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "<node>", "tag": "Power"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Power", "tag": "<name>"}
                 }
             ]
         }
@@ -52,15 +61,15 @@
 
     "feeds": [
         {
-            "name": "<node>",
-            "tag": "Energy",
+            "name": "Energy",
+            "tag": "<name>",
             "type": "DataType::REALTIME",
             "engine": "Engine::PHPTIMESERIES",
             "unit": "kWh"
         },
         {
-            "name": "<node>",
-            "tag": "Power",
+            "name": "Power",
+            "tag": "<name>",
             "type": "DataType::REALTIME",
             "engine": "Engine::PHPTIMESERIES",
             "unit": "W"
