@@ -7,7 +7,7 @@
     "driver": "iec62056-21",
     "devices": [
         {
-		    "name": "serial<address>",
+		    "name": "serial<serialPort>",
             "description": "A1500 Energy Meter",
             "settings": "baudrate:9600"
         }
@@ -49,11 +49,11 @@
             "processList": [
                 {
                     "process": "log_to_feed",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Import energy", "tag": "<name>"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Energy import", "tag": "<name>"}
                 },
                 {
                     "process": "kwh_to_power",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Export energy", "tag": "<name>"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Power import", "tag": "<name>"}
                 }
             ]
         },
@@ -65,11 +65,11 @@
             "processList": [
                 {
                     "process": "log_to_feed",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Export energy", "tag": "<name>"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Energy export", "tag": "<name>"}
                 },
                 {
                     "process": "kwh_to_power",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Export power", "tag": "<name>"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Power export", "tag": "<name>"}
                 }
             ]
         }
@@ -77,28 +77,28 @@
 
     "feeds": [
         {
-            "name": "Import energy",
+            "name": "Energy import",
             "tag": "<name>",
             "type": "DataType::REALTIME",
             "engine": "Engine::PHPTIMESERIES",
             "unit": "kWh"
         },
         {
-            "name": "Import power",
+            "name": "Power import",
             "tag": "<name>",
             "type": "DataType::REALTIME",
             "engine": "Engine::PHPTIMESERIES",
             "unit": "W"
         },
         {
-            "name": "Export energy",
+            "name": "Energy export",
             "tag": "<name>",
             "type": "DataType::REALTIME",
             "engine": "Engine::PHPTIMESERIES",
             "unit": "kWh"
         },
         {
-            "name": "Export power",
+            "name": "Power export",
             "tag": "<name>",
             "type": "DataType::REALTIME",
             "engine": "Engine::PHPTIMESERIES",

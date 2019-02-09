@@ -7,7 +7,7 @@
     "driver": "iec62056-21",
     "devices": [
         {
-		    "name": "serial<address>",
+		    "name": "serial<serialPort>",
             "description": "AS1440 Energy Meter",
             "settings": "baudrate:9600"
         }
