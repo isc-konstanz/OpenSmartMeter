@@ -5,7 +5,7 @@ buildscript {
     }
   }
   dependencies {
-    classpath "biz.aQute.bnd:biz.aQute.bnd.gradle:3.5.0"
+    classpath "biz.aQute.bnd:biz.aQute.bnd.gradle:4.1.0"
   }
 }
 
@@ -17,7 +17,7 @@ configure(allprojects) {
 
 configure(javaProjects) {
 
-  apply plugin: "java"
+  apply plugin: "java-library"
   apply plugin: "eclipse"
   apply plugin: "osgi"
   apply plugin: "maven"
@@ -52,11 +52,13 @@ configure(javaProjects) {
   }
 
   dependencies {
-    testCompile group: "junit", name: "junit", version: "4.12"
-    itestCompile group: "junit", name: "junit", version: "4.12"
-
-    jacoco group: 'org.jacoco', name: 'org.jacoco.ant', version: '0.7.9', classifier: 'nodeps'
-    jacocoRuntime group: 'org.jacoco', name: 'org.jacoco.agent', version: '0.7.9', classifier: 'runtime'
+    testCompile group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.3.2"
+    itestCompile group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.3.2"
+    testCompile group: "org.junit.vintage", name: "junit-vintage-engine", version: "5.3.2"
+    itestCompile group: "org.junit.vintage", name: "junit-vintage-engine", version: "5.3.2"
+    
+    jacoco group: 'org.jacoco', name: 'org.jacoco.ant', version: '0.8.2', classifier: 'nodeps'
+    jacocoRuntime group: 'org.jacoco', name: 'org.jacoco.agent', version: '0.8.2', classifier: 'runtime'
   }
 
   jar {
@@ -82,7 +84,6 @@ configure(javaProjects) {
                   classname: 'org.jacoco.ant.InstrumentTask',
                   classpath: configurations.jacoco.asPath)
       
-
       sourceSets.main.output.classesDirs.each{ f ->
         // Copy directories from main source to instrumented path
 	    copy {
@@ -96,9 +97,9 @@ configure(javaProjects) {
       }
     }
   }
-
+  
   instrument.dependsOn classes
-
+  
   gradle.taskGraph.whenReady { graph ->
     if (graph.hasTask(instrument)) {
       tasks.withType(Test) {
@@ -131,7 +132,7 @@ configure(javaProjects) {
            }
         }
         html(destdir: buildDir.path + '/reports/jacoco')
-    }
+      }
     }
   }
 
