@@ -33,7 +33,7 @@ public class AuthenticationRequest extends DataRequest {
 	private final String password;
 
     public AuthenticationRequest(String password) throws IOException {
-        super((byte) 0x50, password);
+        super((byte) 0x50, '('+password+')');
         this.password = password;
     }
 

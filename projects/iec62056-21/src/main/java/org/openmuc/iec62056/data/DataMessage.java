@@ -38,14 +38,15 @@ public class DataMessage {
     private static final int FRAGMENT_TIMEOUT = 500;
 
     private final String manufacturerId;
-    private final String meterId;
     private final String enhancedId;
+    private final String meterId;
+
     private final List<DataSet> dataSets;
 
-    private DataMessage(String manufacturerId, String meterId, String enhancedId, List<DataSet> dataSets) {
-        this.manufacturerId = manufacturerId;
-        this.meterId = meterId;
-        this.enhancedId = enhancedId;
+    public DataMessage(IdentificationMessage id, List<DataSet> dataSets) {
+        this.manufacturerId = id.getManufactureId();
+        this.enhancedId = id.getEnhancedId();
+        this.meterId = id.getMeterId();
         this.dataSets = dataSets;
     }
 
@@ -53,11 +54,9 @@ public class DataMessage {
      * Reads a data set, consisting of the manufacturer ID, the meter ID (optional), the enhanced ID/capability (optional), and a list
      * of data sets, for Mode A,B and C
      * <p>
-     * General format:     'STX'(0x02) 'Data block' '!' '\r'(0x0D) '\n'(0x0A) 'ETX'(0x03) 'BCC'
-     * Programming format: 'SOH'(0x01) Address 'STX'(0x02) 'Data block' 'ETX'(0x03) 'BCC'
-     * 
-     * Data block:         Data sets, separated by CR and LF, Optionally the data block ends with a CR and LF
-     * Data set:           Address '(' Value(optional) ('*' unit)(optional) ')'
+     * General format: 'STX'(0x02) 'Data block' '!' '\r'(0x0D) '\n'(0x0A) 'ETX'(0x03) 'BCC'
+     * Data block:     Data sets, separated by CR and LF, Optionally the data block ends with a CR and LF
+     * Data set:       Address '(' Value(optional) ('*' unit)(optional) ')'
      * 
      * @param is The steam to read the message from
      * @param id The information about manufacturer ID, the meter ID (optional), the enhanced ID/capability (optional)
@@ -68,47 +67,36 @@ public class DataMessage {
      * 
      */
     public static DataMessage readModeABC(DataInputStream is, IdentificationMessage id) throws IOException {
-        return new DataMessage(id.getManufactureId(), id.getMeterId(), id.getEnhancedId(),
-                DataMessage.readModeABC(is));
-    }
-
-    public static List<DataSet> readModeABC(DataInputStream is) throws IOException {
-        
     	// Clear trailing empty bytes
         byte b = is.readByte();
         while (b == 0x00) {
             b = is.readByte();
         }
-        if (b != 0x01 && b != 0x02) {
+        if (b != 0x02) {
             throw new IOException("Received unexpected data message start byte: " + Converter.toShortHexString(b));
         }
         Bcc bcc = new Bcc();
         
         List<DataSet> dataSets = new ArrayList<>();
         DataSet dataSet;
-        if (b == 0x01) {
-        	dataSet = DataSet.readDataSet(is, bcc);
+        while ((dataSet = DataSet.readDataSet(is, bcc)) != null) {
             dataSets.add(dataSet);
         }
-        else {
-            while ((dataSet = DataSet.readDataSet(is, bcc)) != null) {
-                dataSets.add(dataSet);
-            }
-            
-            b = is.readByte();
-            if (b != '\r') {
-                throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
-                        + ", expected: '\r'(");
-            }
-            bcc.value ^= b;
-            
-            b = is.readByte();
-            if (b != '\n') {
-                throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
-                        + ", expected: '\n'");
-            }
-            bcc.value ^= b;
+        
+        b = is.readByte();
+        if (b != '\r') {
+            throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
+                    + ", expected: '\r'(");
         }
+        bcc.value ^= b;
+        
+        b = is.readByte();
+        if (b != '\n') {
+            throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
+                    + ", expected: '\n'");
+        }
+        bcc.value ^= b;
+        
         b = is.readByte();
         if (b != 0x03) {
             throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
@@ -121,7 +109,7 @@ public class DataMessage {
             throw new IOException("Block check character (BCC) does not match. Received: " + Converter.toHexString(b)
                     + ", expected: " + Converter.toHexString(bcc.value));
         }
-        return dataSets;
+        return new DataMessage(id, dataSets);
     }
 
     /**
@@ -176,8 +164,7 @@ public class DataMessage {
                 throw new IOException("Received unexpected byte at end of data message: "
                         + Converter.toShortHexString(b) + ", expected: '\n'");
             }
-            return new DataMessage(id.getManufactureId(), id.getMeterId(),
-                    id.getEnhancedId(), dataSets);
+            return new DataMessage(id, dataSets);
 
         } finally {
             serialPort.setSerialPortTimeout(0);

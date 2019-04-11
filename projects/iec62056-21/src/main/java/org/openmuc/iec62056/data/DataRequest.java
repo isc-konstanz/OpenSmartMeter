@@ -42,9 +42,9 @@ public class DataRequest extends Request {
     protected static byte[] parseRequest(byte d, String address) {
     	byte[] byteId = address.trim().getBytes(Converter.ASCII_CHARSET);
         try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
-            byteStream.write(new byte[] { 0x01, d, 0x31, 0x02, 0x28 });
+            byteStream.write(new byte[] { 0x01, d, 0x31, 0x02 });
             byteStream.write(byteId);
-            byteStream.write(new byte[] { 0x29, 0x03 });
+            byteStream.write(0x03);
             byteStream.write(Bcc.get(byteStream.toByteArray()));
             
         	return byteStream.toByteArray();

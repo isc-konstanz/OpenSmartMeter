@@ -26,11 +26,12 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.openmuc.iec62056.data.AcknowledgeRequest;
 import org.openmuc.iec62056.data.AcknowledgeMode;
+import org.openmuc.iec62056.data.AcknowledgeRequest;
 import org.openmuc.iec62056.data.AuthenticationRequest;
 import org.openmuc.iec62056.data.Converter;
 import org.openmuc.iec62056.data.DataMessage;
@@ -118,19 +119,15 @@ public class Iec62056 {
     }
 
     /**
-     * Requests meter data and returns the response.
-     * <p>
-     * Requests a data message from the remote device using IEC 62056-21 Mode A, B or C. The data message received is
-     * parsed and returned. The returned data message also contains some information fields from the identification
-     * message sent by the meter.
+     * Initialize the meter readout and returns its identification message.
      * 
-     * @return The response data message.
+     * @return The response identification message.
      * @throws IOException
      *             if any kind of IO error occurs
      * @throws InterruptedIOException
      *             if a timeout is thrown while waiting for the meter response
      */
-    public DataMessage read() throws IOException, InterruptedIOException {
+    private IdentificationMessage initialize() throws IOException, InterruptedIOException {
         if (isClosed()) {
             throw new IOException("Port is closed");
         }
@@ -153,11 +150,10 @@ public class Iec62056 {
         IdentificationMessage identificationMessage = new IdentificationMessage(is);
         logger.debug("Received {}", identificationMessage.toString());
         
-        if (identificationMessage.getProtocolMode() == ProtocolMode.C || settings.hasAuthentication()) {
-        	
-        	int baudRate = !settings.hasAuthentication() ? identificationMessage.getBaudRate() : initBaudRate;
-        	AcknowledgeMode mode = settings.getAcknowledgeMode();
-            AcknowledgeRequest acknowledgeRequest = new AcknowledgeRequest(baudRate, ProtocolControlCharacter.NORMAL, mode);
+        if (identificationMessage.getProtocolMode() == ProtocolMode.C) {
+        	int baudRate = settings.hasHandshake() ? identificationMessage.getBaudRate() : initBaudRate;
+            AcknowledgeRequest acknowledgeRequest = new AcknowledgeRequest(baudRate, 
+            		ProtocolControlCharacter.NORMAL, AcknowledgeMode.DATA_READOUT);
             
             logger.debug("Sending {}", acknowledgeRequest.toString());
             acknowledgeRequest.send(os);
@@ -178,7 +174,24 @@ public class Iec62056 {
             serialPort.setBaudRate(identificationMessage.getBaudRate());
         }
         
-        DataMessage dataMessage = DataMessage.readModeABC(is, identificationMessage);
+        return identificationMessage;
+    }
+
+    /**
+     * Requests meter data and returns the response.
+     * <p>
+     * Requests a data message from the remote device using IEC 62056-21 Mode A, B or C. The data message received is
+     * parsed and returned. The returned data message also contains some information fields from the identification
+     * message sent by the meter.
+     * 
+     * @return The response data message.
+     * @throws IOException
+     *             if any kind of IO error occurs
+     * @throws InterruptedIOException
+     *             if a timeout is thrown while waiting for the meter response
+     */
+    public DataMessage read() throws IOException, InterruptedIOException {
+        DataMessage dataMessage = DataMessage.readModeABC(is, initialize());
         logger.debug("Received data message: {}", dataMessage.toString());
         
         return dataMessage;
@@ -199,33 +212,36 @@ public class Iec62056 {
      * @throws InterruptedIOException
      *             if a timeout is thrown while waiting for the meter response
      */
-    public DataMessage read(Collection<String> addresses) throws IOException, InterruptedIOException, IllegalArgumentException {
-    	DataMessage dataMessage = read();
+    public DataMessage read(Collection<String> addresses) throws IOException, InterruptedIOException {
+        IdentificationMessage identificationMessage = initialize();
         
         if (settings.hasAuthentication()) {
         	AuthenticationRequest authenticationRequest = settings.getAuthenticationRequest();
         	authenticationRequest.send(os);
             logger.debug("Sending {}", authenticationRequest.toString());
-
+            
             byte b = is.readByte();
             if (b != 0x06) {
             	throw new IOException("Received unexpected byte while waiting for acknowledgement: " + Converter.toShortHexString(b));
             }
             clear();
-        	
-            for (String address : addresses) {
-            	DataRequest dataRequest = new DataRequest(address);
-                logger.debug("Sending {}", dataRequest.toString());
-                
-            	dataRequest.send(os);
-            	
-                List<DataSet> dataSets = DataMessage.readModeABC(is);
-                if (dataSets != null) {
-                	dataMessage.addDataSets(dataSets);
-                }
-            }
-            logger.debug("Received data message: {}", dataMessage.toString());
         }
+        List<DataSet> dataSets = new ArrayList<DataSet>();
+        
+        for (String address : addresses) {
+        	DataRequest dataRequest = new DataRequest(address);
+            logger.debug("Sending {}", dataRequest.toString());
+            
+        	dataRequest.send(os);
+        	
+        	DataSet dataSet = DataSet.readDataSet(is);
+            if (dataSet != null) {
+            	dataSets.add(dataSet);
+            }
+        }
+        DataMessage dataMessage = new DataMessage(identificationMessage, dataSets);
+        
+        logger.debug("Received data message: {}", dataMessage.toString());
         return dataMessage;
     }
 

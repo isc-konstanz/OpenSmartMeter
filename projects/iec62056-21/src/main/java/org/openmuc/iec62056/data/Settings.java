@@ -58,10 +58,6 @@ public class Settings {
 		return identificationRequest;
 	}
 
-	public AcknowledgeMode getAcknowledgeMode() {
-		return hasAuthentication() ? AcknowledgeMode.PROGRAMMING : AcknowledgeMode.DATA_READOUT;
-	}
-
 	public int getBaudRate() {
 		return getBaudRate(ProtocolMode.A);
 	}

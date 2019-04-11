@@ -43,6 +43,46 @@ public class DataSet {
         this.unit = unit;
     }
 
+    /**
+     * Reads a data set for a single programming mode data request
+     * <p>
+     * General format: 'STX'(0x02) Address '(' Value(optional) ('*' unit)(optional) ')' 'ETX'(0x03) 'BCC'
+     * 
+     * @param is The steam to read the data set from
+     * 
+     * @return The read data message.
+     * @throws IOException
+     *             if any kind of IO error occurs
+     * 
+     */
+    public static DataSet readDataSet(DataInputStream is) throws IOException {
+    	// Clear trailing empty bytes
+        byte b = is.readByte();
+        while (b == 0x00) {
+            b = is.readByte();
+        }
+        if (b != 0x02) {
+            throw new IOException("Received unexpected data message start byte: " + Converter.toShortHexString(b));
+        }
+        Bcc bcc = new Bcc();
+        
+        DataSet dataSet = DataSet.readDataSet(is, bcc);
+        
+        b = is.readByte();
+        if (b != 0x03) {
+            throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
+                    + ", expected: 0x03");
+        }
+        bcc.value ^= b;
+        
+        b = is.readByte();
+        if (b != bcc.value) {
+            throw new IOException("Block check character (BCC) does not match. Received: " + Converter.toHexString(b)
+                    + ", expected: " + Converter.toHexString(bcc.value));
+        }
+        return dataSet;
+    }
+
     static DataSet readDataSet(DataInputStream is, Bcc bcc) throws IOException {
         byte b = readByteAndCalculateBcc(is, bcc);
         if (b == '\r') {
@@ -61,21 +101,17 @@ public class DataSet {
         
         int i = 0;
         while (b != '(') {
-        	System.out.println(Converter.toAsciiString(new byte[] { b }));
             if (i == BUFFER_LENGTH) {
                 throw new IOException("Expected '(' character not received.");
             }
-            if (b != 0x02) {
-                buffer[i] = b;
-                i++;
-            }
+            buffer[i] = b;
+            i++;
             b = readByteAndCalculateBcc(is, bcc);
         }
         String address = new String(buffer, 0, i, Converter.ASCII_CHARSET);
         
         int start = i;
         while ((b = readByteAndCalculateBcc(is, bcc)) != '*' && b != ')') {
-        	System.out.println(Converter.toAsciiString(new byte[] { b }));
             if (i == BUFFER_LENGTH) {
                 throw new IOException("Expected '*' or ')' character not received.");
             }
@@ -91,7 +127,6 @@ public class DataSet {
         else {
             start = i;
             while ((b = readByteAndCalculateBcc(is, bcc)) != ')') {
-            	System.out.println(Converter.toAsciiString(new byte[] { b }));
                 if (i == BUFFER_LENGTH) {
                     throw new IOException("Expected ')' character not received.");
                 }
@@ -104,7 +139,7 @@ public class DataSet {
         return new DataSet(address, value, unit);
     }
 
-    public static byte readByteAndCalculateBcc(DataInputStream is, Bcc bcc) throws IOException {
+    static byte readByteAndCalculateBcc(DataInputStream is, Bcc bcc) throws IOException {
         byte b = is.readByte();
         bcc.value ^= b;
         return b;
