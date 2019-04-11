@@ -40,6 +40,16 @@
     </deviceAddress>
     
     <deviceSettings>
+      <option id="msgStartChars">
+        <name>Request message start character</name>
+        <description><![CDATA[
+            The start character may be used for manufacture specific identification request messages.
+            With this option the default start character can be changed.
+          ]]>
+        </description>
+        <mandatory>false</mandatory>
+        <type>STRING</type>
+      </option>
       <option id="password">
         <name>Password</name>
         <description><![CDATA[
@@ -48,38 +58,6 @@
         </description>
         <mandatory>false</mandatory>
         <type>STRING</type>
-      </option>
-      <option id="timeout">
-        <name>Timeout</name>
-        <description><![CDATA[
-            The timeout, after which the blocking call to read from the serial port will be canceled.
-          ]]>
-        </description>
-        <mandatory>false</mandatory>
-        <type>INTEGER</type>
-        <default>5000</default>
-      </option>
-      <option id="verify">
-        <name>Verify connection</name>
-        <description><![CDATA[
-            Verify if data can be read from the device, when opening the connection.<br>
-            This may cause problems, for instable connections.
-          ]]>
-        </description>
-        <mandatory>false</mandatory>
-        <type>BOOLEAN</type>
-        <default>true</default>
-      </option>
-      <option id="handleEcho">
-        <name>Handle echo</name>
-        <description><![CDATA[
-            Tell the connection, to throw away echos of received messages.<br><br>
-            Echos are caused by some optical transceivers.
-          ]]>
-        </description>
-        <mandatory>false</mandatory>
-        <type>BOOLEAN</type>
-        <default>false</default>
       </option>
       <option id="handshake">
         <name>Handshake</name>
@@ -91,8 +69,8 @@
         <type>BOOLEAN</type>
         <default>true</default>
       </option>
-      <option id="baudrateChangeDelay">
-        <name>Baudrate change delay</name>
+      <option id="baudRateChangeDelay">
+        <name>Baud Rate change delay</name>
         <description><![CDATA[
             This parameter can usually be set to zero for regular serial ports. 
             If a USB to serial converter is used, you might have to use a delay of around 250ms, 
@@ -103,89 +81,45 @@
         </description>
         <mandatory>false</mandatory>
         <type>INTEGER</type>
-        <default>250</default>
+        <default>0</default>
       </option>
-      <option id="baudrateMax">
-        <name>Baudrate maximum</name>
-        <description><![CDATA[
-            Maximum supported baud rate for the meter.<br><br>
-            Only used, if an initial handshake will be performed.
-          ]]>
-        </description>
-        <mandatory>false</mandatory>
-        <type>INTEGER</type>
-      </option>
-      <option id="baudrate">
-        <name>Baudrate</name>
+      <option id="baudRate">
+        <name>Baud Rate (initial)</name>
         <description><![CDATA[
             The baud rate for the serial communication.<br>
-            Defaults are 300bd 7E1
+            Defaults are 300 baud for modes A, B and C and 2400 baud for Mode D.
           ]]>
         </description>
         <mandatory>false</mandatory>
         <type>INTEGER</type>
-        <default>300</default>
+        <default>-1</default>
       </option>
-      <option id="databits">
-        <name>Databits</name>
+      <option id="retries">
+        <name>Read retries</name>
         <description><![CDATA[
-            The data bits for the serial communication.<br>
-            Defaults are 300bd 7E1
+            Defines the maximum number of read retries.
           ]]>
         </description>
         <mandatory>false</mandatory>
         <type>INTEGER</type>
-        <selection>
-          <item value="5">5</item>
-          <item value="6">6</item>
-          <item value="7">7</item>
-          <item value="8">8</item>
-        </selection>
-        <default>7</default>
+        <default>0</default>
       </option>
-      <option id="stopbits">
-        <name>Stopbits</name>
+      <option id="timeout">
+        <name>Timeout</name>
         <description><![CDATA[
-            The stop bits for the serial communication.<br>
-            Defaults are 300bd 7E1
+            The timeout, after which the blocking call to read from the serial port will be canceled.
           ]]>
         </description>
         <mandatory>false</mandatory>
         <type>INTEGER</type>
-        <selection>
-          <item value="1">1</item>
-          <item value="2">2</item>
-          <item value="3">1.5</item>
-        </selection>
-        <default>1</default>
-      </option>
-      <option id="parity">
-        <name>Parity</name>
-        <description><![CDATA[
-            The parity check for the serial communication.<br>
-            Defaults are 300bd 7E1
-          ]]>
-        </description>
-        <mandatory>false</mandatory>
-        <type>INTEGER</type>
-        <selection>
-          <item value="0">None</item>
-          <item value="1">Odd</item>
-          <item value="2">Even</item>
-          <item value="3">Mark</item>
-          <item value="4">Space</item>
-        </selection>
-        <default>2</default>
+        <default>2000</default>
       </option>
     </deviceSettings>
     
     <deviceScanSettings>
       <option id="serialPort"></option>
+      <option id="baudRate"></option>
       <option id="timeout"></option>
-      <option id="baudrate"></option>
-      <option id="databits"></option>
-      <option id="stopbits"></option>
-      <option id="parity"></option>
     </deviceScanSettings>
     
     <channelAddress>

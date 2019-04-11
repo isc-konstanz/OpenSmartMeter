@@ -25,7 +25,7 @@ jar {
   manifest {
     name = projectName
     instruction 'Bundle-ClassPath', '.,lib/iec62056-21-' + cfgVersion + '.jar'
-    instruction 'Import-Package', '!org.openmuc.iec62056_21.*,org.openmuc.jrxtx,*' + jarDefaultImportPackageVersion
+    instruction 'Import-Package', '!org.openmuc.iec62056.*,org.openmuc.jrxtx,*' + jarDefaultImportPackageVersion
     instruction 'Export-Package', ''
   }
 }
