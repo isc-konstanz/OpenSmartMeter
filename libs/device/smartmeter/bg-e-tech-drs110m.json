@@ -1,0 +1,77 @@
+{
+    "name": "DRS110M",
+    "category": "Meter",
+    "group": "B+G E-TECH",
+    "description": "<b>Energy Meter DRS110M</b>:<br>Current: 10(100)A<br>Voltage : 230V<br>50(60)Hz",
+
+    "driver": "smartmeter",
+    "devices": [
+        {
+            "description": "DRS110M Energy Meter",
+            "settings": "password:00000000,baudrate:9600,handshake:false"
+        }
+    ],
+
+    "options": [
+        {
+            "id": "serialPort",
+            "name": "Serial port",
+            "description": "The physical device address to uniquely identify a physical smart meter.<br><br><b>Example:</b><ol><li><b>Linux</b>: /dev/ttyS0 or /dev/ttyUSB0</li><li><b>Windows</b>: COM1</li></ol>",
+            "type": "text",
+            "mandatory": true,
+            "syntax": "deviceAddress"
+        },
+        {
+            "id": "address",
+            "name": "Device address",
+            "description": "The address to uniquely identify a device, representing an IEC62056-21 slave.<br>For many devices, this is a number that can be read off a label on the meter.<br><br><i>If left empty, a single meter can be addressed without an identifier.<i>",
+            "type": "text",
+            "mandatory": true,
+            "syntax": "deviceAddress"
+        },
+        {
+            "id": "timeOffset",
+            "name": "Time offset",
+            "description": "The time waited in milliseconds, until the serial connection will be used. Necessary for multiple meters on the same line.",
+            "type": "text",
+            "default": 0,
+            "mandatory": false
+        }
+    ],
+
+    "channels": [
+        {
+            "name": "<node>*energy",
+            "address": "00000010",
+            "logging": {"loggingInterval": 60000, "loggingMaxInterval": 180000},
+            "configs": {"samplingInterval": 60000, "scalingFactor": 0.001, "samplingTimeOffset": "<timeOffset>", "valueType":"DOUBLE", "unit": "kWh"},
+            "processList": [
+                {
+                    "process": "log_to_feed",
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Energy", "tag": "<name>"}
+                },
+                {
+                    "process": "kwh_to_power",
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Power", "tag": "<name>"}
+                }
+            ]
+        }
+    ],
+
+    "feeds": [
+        {
+            "name": "Energy",
+            "tag": "<name>",
+            "type": "DataType::REALTIME",
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "kWh"
+        },
+        {
+            "name": "Power",
+            "tag": "<name>",
+            "type": "DataType::REALTIME",
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "W"
+        }
+    ]
+}

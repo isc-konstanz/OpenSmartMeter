@@ -1,5 +1,5 @@
 
-def projectName = "OpenMUC Driver - IEC62056-21"
+def projectName = "OpenMUC Driver - Smart Meter"
 
 configurations.create('embed')
 

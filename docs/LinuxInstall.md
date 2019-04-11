@@ -5,15 +5,15 @@ This document describes how to install the [emonmuc](https://github.com/isc-kons
 
 ---------------
 
-# 1 Install OpenIEC62056-21
+# 1 Install OpenSmartMeter
 
 This short documentation will assume the generic **version 1.0.0** of the driver as a simplification.
 To install the OSGi bundle, simply download the latest release tarball and move the bundle into the emonmuc frameworks *bundles* directory
 
 ~~~shell
-wget --quiet --show-progress https://github.com/isc-konstanz/OpenIEC62056-21/releases/download/v1.0.0/OpenIEC62056-21-1.0.0.tar.gz
-tar -xzf OpenIEC62056-21-1.0.0.tar.gz
-mv ./OpenIEC62056-21/libs/openmuc-driver-iec62056-21-1.0.0.jar /opt/emonmuc/bundles/
+wget --quiet --show-progress https://github.com/isc-konstanz/OpenSmartMeter/releases/download/v1.0.0/OpenSmartMeter-1.0.0.tar.gz
+tar -xzf OpenSmartMeter-1.0.0.tar.gz
+mv ./OpenSmartMeter-1.0.0/libs/openmuc-driver-smartmeter-1.0.0.jar /opt/emonmuc/bundles/
 ~~~
 
 Afterwards restart the framework, for the driver to be started
@@ -26,10 +26,10 @@ emonmuc restart
 ## 1.1 Device templates
 
 Next, device template files are provided by this project, to ease up the configuration of some new hardware devices.  
-Those can be found at *lib/device/iec62056-21* and should be moved to the corresponding directory in the emonmuc root:
+Those can be found at *lib/device/smartmeter* and should be moved to the corresponding directory in the emonmuc root:
 
 ~~~shell
-mv ./OpenIEC62056-21/libs/device/iec62056-21 /opt/emonmuc/lib/device/
+mv ./OpenSmartMeter-1.0.0/libs/device/smartmeter /opt/emonmuc/lib/device/
 ~~~
 
 
@@ -38,5 +38,5 @@ mv ./OpenIEC62056-21/libs/device/iec62056-21 /opt/emonmuc/lib/device/
 At last, don't forget to remove the released tarball to avoid cluttering of your system.
 
 ~~~
-rm -rf ./OpenIEC62056-21*
+rm -rf ./OpenSmartMeter*
 ~~~

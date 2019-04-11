@@ -5,7 +5,7 @@ This project implements a communication protocol as part of [emonmuc](https://gi
 
 ----------
 
-# OpenIEC62056-21
+# OpenSmartMeter
 
 *This section is a placeholder and will be filled with a project description.*
 
@@ -17,18 +17,17 @@ To setup this protocol driver, [emonmuc](https://github.com/isc-konstanz/emonmuc
 With emonmuc being installed, the driver may be enabled
 
 ~~~
-emonmuc install iec62056-21
+emonmuc install smartmeter
 ~~~
 
 To disable the driver, use
 
 ~~~
-emonmuc remove iec62056-21
+emonmuc remove smartmeter
 ~~~
 
 This shell command will set up the driver, as instructed in the [setup script](setup.sh).  
 If there is the need to manually install the driver, the separate [installation guide](docs/LinuxInstall.md) may be followed.
-
 
 
 ----------

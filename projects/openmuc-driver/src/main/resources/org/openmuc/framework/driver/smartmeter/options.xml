@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <configuration>
-  <driver id="iec62056-21">
-    <name>IEC 62056 part 21</name>
+  <driver id="smartmeter">
+    <name>Smart Meter</name>
     <description><![CDATA[
         This driver implements the communication with metering devices as an IEC 62056-21 mode A-D master, 
         which can register one or several slaves such as gas, water, heat, or electricity meters.<br>

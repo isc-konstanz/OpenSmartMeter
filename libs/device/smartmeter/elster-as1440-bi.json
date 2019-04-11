@@ -1,13 +1,13 @@
 {
-    "name": "A1500",
+    "name": "AS1440 (Import/Export)",
     "category": "Meter",
     "group": "Elster",
-    "description": "Energy Meter A1500",
+    "description": "Energy Meter AS1440 Import/Export",
 
-    "driver": "iec62056-21",
+    "driver": "smartmeter",
     "devices": [
         {
-            "description": "A1500 Energy Meter",
+            "description": "AS1440 Energy Meter",
             "settings": "baudrate:9600"
         }
     ],
@@ -41,18 +41,34 @@
 
     "channels": [
         {
-            "name": "<node>",
+            "name": "<node>*import",
             "address": "1.8.0",
             "logging": {"loggingInterval": 60000, "loggingMaxInterval": 900000 },
             "configs": {"samplingInterval": 60000, "samplingTimeOffset": "<timeOffset>", "valueType":"DOUBLE", "unit": "kWh"},
             "processList": [
                 {
                     "process": "log_to_feed",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Energy", "tag": "<name>"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Energy import", "tag": "<name>"}
                 },
                 {
                     "process": "kwh_to_power",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Power", "tag": "<name>"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Power import", "tag": "<name>"}
+                }
+            ]
+        },
+        {
+            "name": "<node>*export",
+            "address": "2.8.0",
+            "logging": {"loggingInterval": 60000, "loggingMaxInterval": 900000 },
+            "configs": {"samplingInterval": 60000, "samplingTimeOffset": "<timeOffset>", "valueType":"DOUBLE", "unit": "kWh"},
+            "processList": [
+                {
+                    "process": "log_to_feed",
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Energy export", "tag": "<name>"}
+                },
+                {
+                    "process": "kwh_to_power",
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Power export", "tag": "<name>"}
                 }
             ]
         }
@@ -60,14 +76,28 @@
 
     "feeds": [
         {
-            "name": "Energy",
+            "name": "Energy import",
             "tag": "<name>",
             "type": "DataType::REALTIME",
             "engine": "Engine::PHPTIMESERIES",
             "unit": "kWh"
         },
         {
-            "name": "Power",
+            "name": "Power import",
+            "tag": "<name>",
+            "type": "DataType::REALTIME",
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "W"
+        },
+        {
+            "name": "Energy export",
+            "tag": "<name>",
+            "type": "DataType::REALTIME",
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "kWh"
+        },
+        {
+            "name": "Power export",
             "tag": "<name>",
             "type": "DataType::REALTIME",
             "engine": "Engine::PHPTIMESERIES",

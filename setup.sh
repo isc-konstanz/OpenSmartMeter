@@ -1,8 +1,8 @@
 #!/bin/bash
-#Description: Setup script to install OpenIEC62056-21
+#Description: Setup script to install OpenSmartMeter
 SERVER="https://github.com/isc-konstanz"
-PROJECT="OpenIEC62056-21"
-ID="iec62056-21"
+PROJECT="OpenSmartMeter"
+ID="smartmeter"
 
 VERSION="1.0.0"
 

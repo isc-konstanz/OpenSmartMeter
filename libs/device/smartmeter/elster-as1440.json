@@ -4,7 +4,7 @@
     "group": "Elster",
     "description": "Energy Meter AS1440",
     
-    "driver": "iec62056-21",
+    "driver": "smartmeter",
     "devices": [
         {
             "description": "AS1440 Energy Meter",

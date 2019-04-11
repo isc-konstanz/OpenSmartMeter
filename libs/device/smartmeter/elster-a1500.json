@@ -1,14 +1,14 @@
 {
-    "name": "DRS110M",
+    "name": "A1500",
     "category": "Meter",
-    "group": "B+G E-TECH",
-    "description": "<b>Energy Meter DRS110M</b>:<br>Current: 10(100)A<br>Voltage : 230V<br>50(60)Hz",
+    "group": "Elster",
+    "description": "Energy Meter A1500",
 
-    "driver": "iec62056-21",
+    "driver": "smartmeter",
     "devices": [
         {
-            "description": "DRS110M Energy Meter",
-            "settings": "password:00000000,baudrate:9600"
+            "description": "A1500 Energy Meter",
+            "settings": "baudrate:9600"
         }
     ],
 
@@ -26,7 +26,7 @@
             "name": "Device address",
             "description": "The address to uniquely identify a device, representing an IEC62056-21 slave.<br>For many devices, this is a number that can be read off a label on the meter.<br><br><i>If left empty, a single meter can be addressed without an identifier.<i>",
             "type": "text",
-            "mandatory": true,
+            "mandatory": false,
             "syntax": "deviceAddress"
         },
         {
@@ -41,10 +41,10 @@
 
     "channels": [
         {
-            "name": "<node>*energy",
-            "address": "00000010",
-            "logging": {"loggingInterval": 60000, "loggingMaxInterval": 180000},
-            "configs": {"samplingInterval": 60000, "scalingFactor": 0.001, "samplingTimeOffset": "<timeOffset>", "valueType":"DOUBLE", "unit": "kWh"},
+            "name": "<node>",
+            "address": "1.8.0",
+            "logging": {"loggingInterval": 60000, "loggingMaxInterval": 900000 },
+            "configs": {"samplingInterval": 60000, "samplingTimeOffset": "<timeOffset>", "valueType":"DOUBLE", "unit": "kWh"},
             "processList": [
                 {
                     "process": "log_to_feed",

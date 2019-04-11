@@ -1,18 +1,18 @@
 
-Copyright 2011-18 ISC Konstanz
+Copyright 2016-19 ISC Konstanz
 
-This file is part of OpenIEC62056-21.
-For more information visit https://github.com/isc-konstanz/OpenIEC62056-21
+This file is part of OpenSmartMeter.
+For more information visit https://github.com/isc-konstanz/OpenSmartMeter
 
-OpenIEC62056-21 is free software: you can redistribute it and/or modify
+OpenSmartMeter is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-OpenIEC62056-21 is distributed in the hope that it will be useful,
+OpenSmartMeter is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with OpenIEC62056-21.  If not, see <http://www.gnu.org/licenses/>.
+along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.

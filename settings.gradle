@@ -1,5 +1,5 @@
-include "iec62056-21", "openmuc-driver-iec62056-21"
+include "iec62056-21", "openmuc-driver-smartmeter"
 
 project(":iec62056-21").projectDir = file("projects/iec62056-21")
 
-project(":openmuc-driver-iec62056-21").projectDir = file("projects/openmuc-driver")
+project(":openmuc-driver-smartmeter").projectDir = file("projects/openmuc-driver")

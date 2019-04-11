@@ -1,5 +1,5 @@
 
-def projectName = "OpenIEC62056-21"
+def projectName = "IEC 62056-21"
 
 def jrxtxVersion = '1.0.1'
 
