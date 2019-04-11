@@ -20,29 +20,31 @@
  */
 package org.openmuc.iec62056.data;
 
-import java.io.DataOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public abstract class Request {
+/**
+ * Used to request specific data in programming mode.
+ * <p>
+ * General format: 'SOH' B0 'ETX' 'BCC'
+ * 
+ */
+public class EndRequest extends Request {
 
-    protected final byte[] requestMessageBytes;
-
-    protected Request(byte[] requestMessageBytes) {
-    	this.requestMessageBytes = requestMessageBytes;
+    public EndRequest() throws IOException {
+    	super(parseRequest());
     }
 
-    protected Request(String requestMessageStr) {
-    	this(requestMessageStr.getBytes(Converter.ASCII_CHARSET));
-    }
-
-    public void send(DataOutputStream os) throws IOException {
-        os.write(requestMessageBytes);
-        os.flush();
-    }
-
-    @Override
-    public String toString() {
-        return Converter.toAsciiString(requestMessageBytes);
+    private static byte[] parseRequest() {
+        try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream()) {
+            byteStream.write(new byte[] { 0x01, 0x42, 0x30, 0x03 });
+            byteStream.write(Bcc.get(byteStream.toByteArray()));
+            
+        	return byteStream.toByteArray();
+        	
+        } catch (IOException e) {
+        	return new byte[0];
+		}
     }
 
 }

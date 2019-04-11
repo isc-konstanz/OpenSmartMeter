@@ -61,7 +61,7 @@ public class DataSet {
         while (b == 0x00) {
             b = is.readByte();
         }
-        if (b != 0x02) {
+        if (b != 0x01 && b != 0x02) {
             throw new IOException("Received unexpected data message start byte: " + Converter.toShortHexString(b));
         }
         Bcc bcc = new Bcc();
@@ -104,8 +104,10 @@ public class DataSet {
             if (i == BUFFER_LENGTH) {
                 throw new IOException("Expected '(' character not received.");
             }
-            buffer[i] = b;
-            i++;
+            if (b != 0x02) {
+                buffer[i] = b;
+                i++;
+            }
             b = readByteAndCalculateBcc(is, bcc);
         }
         String address = new String(buffer, 0, i, Converter.ASCII_CHARSET);

@@ -54,6 +54,7 @@ public class DataMessage {
      * Reads a data set, consisting of the manufacturer ID, the meter ID (optional), the enhanced ID/capability (optional), and a list
      * of data sets, for Mode A,B and C
      * <p>
+     * Programming format: 'SOH'(0x01) Address 'STX'(0x02) 'Data block' 'ETX'(0x03) 'BCC'
      * General format: 'STX'(0x02) 'Data block' '!' '\r'(0x0D) '\n'(0x0A) 'ETX'(0x03) 'BCC'
      * Data block:     Data sets, separated by CR and LF, Optionally the data block ends with a CR and LF
      * Data set:       Address '(' Value(optional) ('*' unit)(optional) ')'
@@ -72,31 +73,36 @@ public class DataMessage {
         while (b == 0x00) {
             b = is.readByte();
         }
-        if (b != 0x02) {
+        if (b != 0x01 && b != 0x02) {
             throw new IOException("Received unexpected data message start byte: " + Converter.toShortHexString(b));
         }
         Bcc bcc = new Bcc();
         
         List<DataSet> dataSets = new ArrayList<>();
         DataSet dataSet;
-        while ((dataSet = DataSet.readDataSet(is, bcc)) != null) {
+        if (b == 0x01) {
+        	dataSet = DataSet.readDataSet(is, bcc);
             dataSets.add(dataSet);
         }
-        
-        b = is.readByte();
-        if (b != '\r') {
-            throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
-                    + ", expected: '\r'(");
+        else {
+            while ((dataSet = DataSet.readDataSet(is, bcc)) != null) {
+                dataSets.add(dataSet);
+            }
+            
+            b = is.readByte();
+            if (b != '\r') {
+                throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
+                        + ", expected: '\r'(");
+            }
+            bcc.value ^= b;
+            
+            b = is.readByte();
+            if (b != '\n') {
+                throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
+                        + ", expected: '\n'");
+            }
+            bcc.value ^= b;
         }
-        bcc.value ^= b;
-        
-        b = is.readByte();
-        if (b != '\n') {
-            throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
-                    + ", expected: '\n'");
-        }
-        bcc.value ^= b;
-        
         b = is.readByte();
         if (b != 0x03) {
             throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)

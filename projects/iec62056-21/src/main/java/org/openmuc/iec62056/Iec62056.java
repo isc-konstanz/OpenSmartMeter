@@ -37,6 +37,7 @@ import org.openmuc.iec62056.data.Converter;
 import org.openmuc.iec62056.data.DataMessage;
 import org.openmuc.iec62056.data.DataRequest;
 import org.openmuc.iec62056.data.DataSet;
+import org.openmuc.iec62056.data.EndRequest;
 import org.openmuc.iec62056.data.IdentificationMessage;
 import org.openmuc.iec62056.data.IdentificationRequest;
 import org.openmuc.iec62056.data.ProtocolControlCharacter;
@@ -127,7 +128,7 @@ public class Iec62056 {
      * @throws InterruptedIOException
      *             if a timeout is thrown while waiting for the meter response
      */
-    private IdentificationMessage initialize() throws IOException, InterruptedIOException {
+    private IdentificationMessage initiate() throws IOException, InterruptedIOException {
         if (isClosed()) {
             throw new IOException("Port is closed");
         }
@@ -152,8 +153,9 @@ public class Iec62056 {
         
         if (identificationMessage.getProtocolMode() == ProtocolMode.C) {
         	int baudRate = settings.hasHandshake() ? identificationMessage.getBaudRate() : initBaudRate;
+        	AcknowledgeMode mode = settings.getAcknowledgeMode();
             AcknowledgeRequest acknowledgeRequest = new AcknowledgeRequest(baudRate, 
-            		ProtocolControlCharacter.NORMAL, AcknowledgeMode.DATA_READOUT);
+            		ProtocolControlCharacter.NORMAL, mode);
             
             logger.debug("Sending {}", acknowledgeRequest.toString());
             acknowledgeRequest.send(os);
@@ -166,6 +168,7 @@ public class Iec62056 {
                 }
             }
         }
+        
         if (identificationMessage.getProtocolMode() == ProtocolMode.B
                 || (identificationMessage.getProtocolMode() == ProtocolMode.C && settings.hasHandshake())) {
             logger.debug("Changing baud rate from {} to {}", 
@@ -174,7 +177,28 @@ public class Iec62056 {
             serialPort.setBaudRate(identificationMessage.getBaudRate());
         }
         
+        if (settings.hasAuthentication()) {
+            if (settings.hasHandshake() && identificationMessage.getProtocolMode() == ProtocolMode.C) {
+            	DataSet.readDataSet(is);
+            }
+        	AuthenticationRequest authenticationRequest = settings.getAuthenticationRequest();
+        	authenticationRequest.send(os);
+            logger.debug("Sending {}", authenticationRequest.toString());
+            
+            byte b = is.readByte();
+            if (b != 0x06) {
+            	throw new IOException("Received unexpected byte while waiting for acknowledgement: " + Converter.toShortHexString(b));
+            }
+        }
         return identificationMessage;
+    }
+
+    private void terminate() throws IOException {
+        if (settings.hasAuthentication()) {
+        	EndRequest endRequest = new EndRequest();
+        	endRequest.send(os);
+            logger.debug("Sending {}", endRequest.toString());
+        }
     }
 
     /**
@@ -191,9 +215,10 @@ public class Iec62056 {
      *             if a timeout is thrown while waiting for the meter response
      */
     public DataMessage read() throws IOException, InterruptedIOException {
-        DataMessage dataMessage = DataMessage.readModeABC(is, initialize());
+        DataMessage dataMessage = DataMessage.readModeABC(is, initiate());
         logger.debug("Received data message: {}", dataMessage.toString());
         
+        terminate();
         return dataMessage;
     }
 
@@ -213,21 +238,9 @@ public class Iec62056 {
      *             if a timeout is thrown while waiting for the meter response
      */
     public DataMessage read(Collection<String> addresses) throws IOException, InterruptedIOException {
-        IdentificationMessage identificationMessage = initialize();
+        IdentificationMessage identificationMessage = initiate();
         
-        if (settings.hasAuthentication()) {
-        	AuthenticationRequest authenticationRequest = settings.getAuthenticationRequest();
-        	authenticationRequest.send(os);
-            logger.debug("Sending {}", authenticationRequest.toString());
-            
-            byte b = is.readByte();
-            if (b != 0x06) {
-            	throw new IOException("Received unexpected byte while waiting for acknowledgement: " + Converter.toShortHexString(b));
-            }
-            clear();
-        }
         List<DataSet> dataSets = new ArrayList<DataSet>();
-        
         for (String address : addresses) {
         	DataRequest dataRequest = new DataRequest(address);
             logger.debug("Sending {}", dataRequest.toString());
@@ -239,6 +252,8 @@ public class Iec62056 {
             	dataSets.add(dataSet);
             }
         }
+        terminate();
+        
         DataMessage dataMessage = new DataMessage(identificationMessage, dataSets);
         
         logger.debug("Received data message: {}", dataMessage.toString());
