@@ -21,11 +21,9 @@
 package org.openmuc.framework.driver.iec62056_21;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeoutException;
 
 import org.openmuc.framework.config.ChannelScanInfo;
 import org.openmuc.framework.config.ScanException;
@@ -39,48 +37,58 @@ import org.openmuc.framework.driver.spi.ChannelValueContainer;
 import org.openmuc.framework.driver.spi.Connection;
 import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
-import org.openmuc.iec62056_21.DataSet;
-import org.openmuc.iec62056_21.Iec62056Settings;
-import org.openmuc.iec62056_21.serial.SerialConnection;
+import org.openmuc.iec62056.Iec62056;
+import org.openmuc.iec62056.data.DataMessage;
+import org.openmuc.iec62056.data.DataSet;
+import org.openmuc.iec62056.data.Settings;
+import org.openmuc.jrxtx.SerialPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Iec62056Connection extends org.openmuc.iec62056_21.Iec62056Connection implements Connection {
-	private final static Logger logger = LoggerFactory.getLogger(Iec62056Connection.class);
+public class Iec62056Connection extends Iec62056 implements Connection {
+    private final static Logger logger = LoggerFactory.getLogger(Iec62056Connection.class);
 
-	private Iec62056Settings settings;
+    private int retries;
 
-    public Iec62056Connection(Iec62056Settings settings, SerialConnection serial) {
-		super(serial);
-		this.settings = settings;
-	}
+    public Iec62056Connection(SerialPort serialPort, Settings settings, int retries) 
+            throws ConnectionException, IOException {
+        super(serialPort, settings);
+        this.retries = retries;
+        try {
+            // FIXME: Sleep to avoid to early read after connection. Meters have some delay.
+            Thread.sleep(settings.getTimeout());
+            
+        } catch (InterruptedException e) {
+            logger.debug("Interrupted while waiting for port to open");
+        }
+    }
 
     @Override
     public List<ChannelScanInfo> scanForChannels(String settings)
             throws UnsupportedOperationException, ScanException, ConnectionException {
-    	
+        
         List<DataSet> dataSets;
+        DataMessage dataMessage;
         try {
-            dataSets = read(this.settings);
+            dataMessage = read();
             
-            if (dataSets == null) {
-                throw new TimeoutException("No data sets received.");
-            }
-        } catch (IOException | TimeoutException e) {
-            logger.debug("Scanning channels for device failed: " + e);
+        } catch (IOException e) {
             throw new ScanException(e);
+        }
+        dataSets = dataMessage.getDataSets();
+        if (dataSets == null) {
+            throw new ScanException("Scan timed out.");
         }
         
         List<ChannelScanInfo> scanInfos = new ArrayList<>(dataSets.size());
-        
         for (DataSet dataSet : dataSets) {
+            String description = dataSet.getAddress()+" ["+dataSet.getUnit()+"]";
             try {
                 Double.parseDouble(dataSet.getValue());
-                scanInfos.add(new ChannelScanInfo(dataSet.getId(), "", ValueType.DOUBLE, null));
+                scanInfos.add(new ChannelScanInfo(dataSet.getAddress(), description, ValueType.DOUBLE, null));
             } catch (NumberFormatException e) {
-                scanInfos.add(new ChannelScanInfo(dataSet.getId(), "", ValueType.STRING, dataSet.getValue().length()));
+                scanInfos.add(new ChannelScanInfo(dataSet.getAddress(), description, ValueType.STRING, dataSet.getValue().length()));
             }
-
         }
         return scanInfos;
     }
@@ -88,44 +96,60 @@ public class Iec62056Connection extends org.openmuc.iec62056_21.Iec62056Connecti
     @Override
     public Object read(List<ChannelRecordContainer> containers, Object containerListHandle, String samplingGroup)
             throws UnsupportedOperationException, ConnectionException {
-    	
-        Map<String, ChannelRecordContainer> containersById = new HashMap<String, ChannelRecordContainer>();
-        for (ChannelRecordContainer container : containers) {
-            containersById.put(container.getChannelAddress(), container);
+        
+        List<DataSet> dataSets = null;
+        DataMessage dataMessage;
+        for (int i = 0; i <= retries; ++i) {
+            try {
+                if (settings.hasAuthentication()) {
+                	List<String> addresses = new ArrayList<String>(containers.size());
+                    for (ChannelRecordContainer container : containers) {
+                    	addresses.add(container.getChannelAddress());
+                    }
+                    dataMessage = read(addresses);
+                }
+                else {
+                    dataMessage = read();
+                }
+                dataSets = dataMessage.getDataSets();
+                if (dataSets != null && !dataSets.isEmpty()) {
+                    i = retries;
+                }
+            } catch (IOException e) {
+                logger.debug("Reading from device failed: " + e);
+                if (i < retries) {
+                    continue;
+                }
+                if (e instanceof InterruptedIOException) {
+                    for (ChannelRecordContainer container : containers) {
+                        container.setRecord(new Record(Flag.TIMEOUT));
+                    }
+                    return null;
+                }
+                for (ChannelRecordContainer container : containers) {
+                    container.setRecord(new Record(Flag.DRIVER_ERROR_READ_FAILURE));
+                }
+                close();
+                
+                throw new ConnectionException("Read failed: " + e.getMessage());
+            }
         }
-        try {
-        	List<DataSet> dataSets = read(settings, containersById.keySet());
-            if (dataSets == null) {
-                throw new TimeoutException("No data sets received.");
+        long time = System.currentTimeMillis();
+        for (ChannelRecordContainer container : containers) {
+            for (DataSet dataSet : dataSets) {
+                if (dataSet.getAddress().equals(container.getChannelAddress())) {
+                    String value = dataSet.getValue();
+                    if (value != null) {
+                        try {
+                            container.setRecord(new Record(new DoubleValue(Double.parseDouble(dataSet.getValue())), time));
+                            
+                        } catch (NumberFormatException e) {
+                            container.setRecord(new Record(new StringValue(dataSet.getValue()), time));
+                        }
+                    }
+                    break;
+                }
             }
-            
-	        long time = System.currentTimeMillis();
-	        for (DataSet dataSet : dataSets) {
-	            if (containersById.containsKey(dataSet.getId())) {
-	                String value = dataSet.getValue();
-	                if (value != null) {
-	                    ChannelRecordContainer container = containersById.get(dataSet.getId());
-	                    try {
-	                        container.setRecord(new Record(new DoubleValue(Double.parseDouble(dataSet.getValue())), time));
-	                    } catch (NumberFormatException e) {
-	                        container.setRecord(new Record(new StringValue(dataSet.getValue()), time));
-	                    }
-	                }
-	            }
-	        }
-        } catch (TimeoutException e) {
-            logger.debug("Reading from device timed out");
-            for (ChannelRecordContainer container : containers) {
-                container.setRecord(new Record(Flag.TIMEOUT));
-            }
-        } catch (IOException e) {
-            logger.debug("Reading from device failed: " + e);
-            for (ChannelRecordContainer container : containers) {
-                container.setRecord(new Record(Flag.DRIVER_ERROR_READ_FAILURE));
-            }
-            close();
-        	
-            throw new ConnectionException("Read failed: " + e.getMessage());
         }
         return null;
     }
@@ -133,7 +157,15 @@ public class Iec62056Connection extends org.openmuc.iec62056_21.Iec62056Connecti
     @Override
     public void startListening(List<ChannelRecordContainer> containers, RecordsReceivedListener listener)
             throws UnsupportedOperationException, ConnectionException {
-        throw new UnsupportedOperationException();
+        
+        Iec62056Listener iec62056Listener = new Iec62056Listener();
+        iec62056Listener.registerOpenMucListener(containers, listener);
+        try {
+            listen(iec62056Listener);
+            
+        } catch (IOException e) {
+            throw new ConnectionException(e);
+        }
     }
 
     @Override

@@ -23,45 +23,35 @@ package org.openmuc.framework.driver.iec62056_21.settings;
 import org.openmuc.framework.config.PreferenceType;
 import org.openmuc.framework.config.Preferences;
 
-import gnu.io.SerialPort;
-
-@SuppressWarnings("deprecation")
 public class DeviceSettings extends Preferences {
 
     public static final PreferenceType TYPE = PreferenceType.SETTINGS_DEVICE;
+
+    public static final String BAUD_RATE_KEY = "baudRate";
+
+    public static final String TIMEOUT_KEY = "timeout";
+    public static final int TIMEOUT_DEFAULT = 2000;
 
     @Option
     private String password = null;
 
     @Option
-    private int timeout = 5000;
-
-    @Option
-    private boolean verify = true;
-
-    @Option
-    private boolean handleEcho = false;
+    private String msgStartChars = "";
 
     @Option
     private boolean handshake = true;
 
     @Option
-    private int baudrateChangeDelay = 250;
+    private int baudRateChangeDelay = 0;
 
     @Option
-    private Integer baudrateMax = null;
-
-    @Option
-    private int baudrate = 300;
+    private int baudRate = -1;
 
 	@Option
-    private int databits = SerialPort.DATABITS_7;
+    private int retries = 0;
 
     @Option
-    private int stopbits = SerialPort.STOPBITS_1;
-
-    @Option
-    private int parity = SerialPort.PARITY_EVEN;
+    private int timeout = TIMEOUT_DEFAULT;
 
     @Override
     public PreferenceType getPreferenceType() {
@@ -72,44 +62,28 @@ public class DeviceSettings extends Preferences {
         return password;
     }
 
-    public int getTimeout() {
-    	return timeout;
-    }
-
-    public boolean hasVerification() {
-        return verify;
-    }
-
-    public boolean hasEchoHandling() {
-        return handleEcho;
+    public String getMsgStartChars() {
+        return msgStartChars;
     }
 
     public boolean hasHandshake() {
         return handshake;
     }
 
-    public int getBaudrateChangeDelay() {
-        return baudrateChangeDelay;
+    public int getBaudRateChangeDelay() {
+        return baudRateChangeDelay;
     }
 
-    public Integer getBaudrateMaximum() {
-        return baudrateMax;
+    public int getBaudRate() {
+        return baudRate;
     }
 
-    public int getBaudrate() {
-        return baudrate;
+    public int getTimeout() {
+    	return timeout;
     }
 
-    public int getDatabits() {
-        return databits;
-    }
-
-    public int getStopbits() {
-        return stopbits;
-    }
-
-    public int getParity() {
-        return parity;
+    public int getRetries() {
+    	return retries;
     }
 
 }

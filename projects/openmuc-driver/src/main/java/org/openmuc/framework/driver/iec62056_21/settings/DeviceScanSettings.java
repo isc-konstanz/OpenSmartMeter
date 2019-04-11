@@ -23,9 +23,6 @@ package org.openmuc.framework.driver.iec62056_21.settings;
 import org.openmuc.framework.config.PreferenceType;
 import org.openmuc.framework.config.Preferences;
 
-import gnu.io.SerialPort;
-
-@SuppressWarnings("deprecation")
 public class DeviceScanSettings extends Preferences {
 
     public static final PreferenceType TYPE = PreferenceType.SETTINGS_SCAN_DEVICE;
@@ -34,19 +31,10 @@ public class DeviceScanSettings extends Preferences {
     private String serialPort;
 
     @Option
-    private int timeout = 5000;
+    private int baudRate = -1;
 
     @Option
-    private int baudrate = 300;
-
-	@Option
-    private int databits = SerialPort.DATABITS_7;
-
-    @Option
-    private int stopbits = SerialPort.STOPBITS_1;
-
-    @Option
-    private int parity = SerialPort.PARITY_EVEN;
+    private int timeout = DeviceSettings.TIMEOUT_DEFAULT;
 
     @Override
     public PreferenceType getPreferenceType() {
@@ -57,24 +45,12 @@ public class DeviceScanSettings extends Preferences {
         return serialPort;
     }
 
+    public int getBaudRate() {
+        return baudRate;
+    }
+
     public int getTimeout() {
     	return timeout;
-    }
-
-    public int getBaudrate() {
-        return baudrate;
-    }
-
-    public int getDatabits() {
-        return databits;
-    }
-
-    public int getStopbits() {
-        return stopbits;
-    }
-
-    public int getParity() {
-        return parity;
     }
 
 }

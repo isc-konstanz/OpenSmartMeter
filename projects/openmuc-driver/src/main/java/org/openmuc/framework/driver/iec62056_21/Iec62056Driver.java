@@ -20,11 +20,7 @@
  */
 package org.openmuc.framework.driver.iec62056_21;
 
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeoutException;
 
 import org.openmuc.framework.config.ArgumentSyntaxException;
 import org.openmuc.framework.config.DeviceScanInfo;
@@ -39,10 +35,10 @@ import org.openmuc.framework.driver.spi.Connection;
 import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.framework.driver.spi.DriverDeviceScanListener;
 import org.openmuc.framework.driver.spi.DriverService;
-import org.openmuc.iec62056_21.DataSet;
-import org.openmuc.iec62056_21.Iec62056Settings;
-import org.openmuc.iec62056_21.serial.SerialConnection;
-import org.openmuc.iec62056_21.serial.SerialSettings;
+import org.openmuc.iec62056.Iec62056;
+import org.openmuc.iec62056.Iec62056Builder;
+import org.openmuc.iec62056.data.DataMessage;
+import org.openmuc.iec62056.data.DataSet;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,8 +49,6 @@ public final class Iec62056Driver implements DriverService {
 
     private final DriverInfo info = DriverInfoFactory.getPreferences(Iec62056Driver.class);
 
-    private final Map<String, SerialConnection> serialPorts = new HashMap<String, SerialConnection>();
-    
     public Iec62056Driver() {
         logger.debug("IEC 62056 part 21 Driver instantiated. Expecting rxtxserial.so in: " + 
                 System.getProperty("java.library.path") + " for serial connections.");
@@ -70,47 +64,39 @@ public final class Iec62056Driver implements DriverService {
             throws UnsupportedOperationException, ArgumentSyntaxException, ScanException, ScanInterruptedException {
     	
         DeviceScanSettings settings = info.parse(settingsStr, DeviceScanSettings.class);
-        
-        SerialSettings serialSettings = new SerialSettings(settings.getSerialPort(), 
-        		settings.getBaudrate(), settings.getDatabits(), settings.getStopbits(), settings.getParity());
-        
-        Iec62056Settings connectionSettings = new Iec62056Settings()
-        		.setTimeout(settings.getTimeout());
-        
-        logger.debug("Scanning for devices at {}", serialSettings.getPort());
-        
-        SerialConnection serialPort;
-        synchronized(serialPorts) {
-            if (serialPorts.containsKey(serialSettings.getPort())) {
-                serialPort = serialPorts.get(serialSettings.getPort());
-            }
-            else {
-                serialPort = new SerialConnection(serialSettings);
-                serialPorts.put(serialSettings.getPort(), serialPort);
-            }
-        }
-        
-        Iec62056Connection connection = new Iec62056Connection(connectionSettings, serialPort);
+        Iec62056 connection = null;
         try {
-            if (connection.open()) {
-                Integer timeout = settings.getTimeout();
-                if (timeout != null && timeout != connection.getTimeout()) {
-                	connection.setTimeout(timeout);
-                }
-                
-                List<DataSet> dataSets = connection.read(connectionSettings);
-                
-                listener.deviceFound(new DeviceScanInfo("", settingsStr,
-                        dataSets.get(0).getId().replaceAll("\\p{Cntrl}", "")));
-            }
-        } catch (IOException e) {
-        	connection.close();
-            logger.debug("Scanning channels at {} failed: {}", serialSettings.getPort(), e.getMessage());
-            throw new ScanException(e);
+            connection = new Iec62056Builder(settings.getSerialPort())
+            		.setBaudRate(settings.getBaudRate())
+            		.setTimeout(settings.getTimeout())
+            		.build();
             
-        } catch (TimeoutException e) {
-            logger.debug("Timeout while scanning channels at {} failed: {}", serialSettings.getPort(), e.getMessage());
-            throw new ScanException(e);
+            DataMessage dataMessage = connection.read();
+            List<DataSet> dataSets = dataMessage.getDataSets();
+            
+            StringBuilder deviceAddress = new StringBuilder();
+            deviceAddress.append(DeviceAddress.SERIAL_PORT_KEY).append(':').append(settings.getSerialPort());
+            
+            StringBuilder deviceSettings = new StringBuilder();
+            if (settings.getBaudRate() > 0) {
+                deviceSettings.append(DeviceSettings.BAUD_RATE_KEY).append(':').append(settings.getBaudRate());
+            }
+            if (settings.getTimeout() != DeviceSettings.TIMEOUT_DEFAULT) {
+            	if (deviceSettings.length() > 0) {
+            		deviceSettings.append(',');
+            	}
+                deviceSettings.append(DeviceSettings.TIMEOUT_KEY).append(':').append(settings.getTimeout());
+            }
+            listener.deviceFound(new DeviceScanInfo(deviceAddress.toString().trim(), deviceSettings.toString().trim(),
+                    dataSets.get(0).getAddress().replaceAll("\\p{Cntrl}", "")));
+            
+        } catch (Exception e) {
+            throw new ScanException("Failed to open serial port: " + e.getMessage());
+            
+		} finally {
+        	if (connection != null) {
+            	connection.close();
+        	}
         }
     }
 
@@ -122,48 +108,25 @@ public final class Iec62056Driver implements DriverService {
     @Override
     public synchronized Connection connect(String addressStr, String settingsStr)
             throws ArgumentSyntaxException, ConnectionException {
-
-        logger.trace("Connect IEC 62056 device address \"{}\": {}", addressStr, settingsStr);
+        
+        logger.debug("Connect IEC 62056 device address \"{}\": {}", addressStr, settingsStr);
         DeviceAddress address = info.parse(addressStr, DeviceAddress.class);
         DeviceSettings settings = info.parse(settingsStr, DeviceSettings.class);
-        
-        SerialSettings serialSettings = new SerialSettings(address.getSerialPort(), 
-        		settings.getBaudrate(), settings.getDatabits(), settings.getStopbits(), settings.getParity());
-        
-        Iec62056Settings connectionSettings = new Iec62056Settings(address.getAddress())
-        		.setPassword(settings.getPassword())
-        		.setTimeout(settings.getTimeout())
-        		.setVerification(settings.hasVerification())
-        		.setEchoHandling(settings.hasEchoHandling())
-        		.setHandshake(settings.hasHandshake())
-        		.setBaudrateChangeDelay(settings.getBaudrateChangeDelay())
-        		.setBaudrateMaximum(settings.getBaudrateMaximum());
-        
-        SerialConnection serialPort;
-        synchronized(serialPorts) {
-            if (serialPorts.containsKey(serialSettings.getPort())) {
-                serialPort = serialPorts.get(serialSettings.getPort());
-            }
-            else {
-                serialPort = new SerialConnection(serialSettings);
-                serialPorts.put(serialSettings.getPort(), serialPort);
-            }
-        }
-        
-        Iec62056Connection connection = new Iec62056Connection(connectionSettings, serialPort);
         try {
-        	connection.open();
+            Iec62056Builder builder = new Iec62056Builder(address.getSerialPort())
+                    .setDeviceAddress(address.getAddress())
+            		.setPassword(settings.getPassword())
+                    .setMsgStartChars(settings.getMsgStartChars())
+                    .enableBaudRateHandshake(settings.hasHandshake())
+                    .setBaudRateChangeDelay(settings.getBaudRateChangeDelay())
+                    .setBaudRate(settings.getBaudRate())
+    				.setTimeout(settings.getTimeout());
             
-            if (settings.hasVerification()) {
-            	connection.read(connectionSettings);
-            }
-        } catch (IOException | TimeoutException e) {
-        	connection.close();
-            throw new ConnectionException("Failed to open local serial port \"" +serialSettings.getPort() + "\": " + e.getMessage(), e);
+        	return new Iec62056Connection(builder.open(), builder.setup(), settings.getRetries());
+            
+        } catch (Exception e) {
+            throw new ConnectionException(e.getMessage());
         }
-        logger.debug("Connected to device \"{}\" at {}", address.getAddress(), serialSettings.getPort());
-        
-        return connection;
     }
 
 }

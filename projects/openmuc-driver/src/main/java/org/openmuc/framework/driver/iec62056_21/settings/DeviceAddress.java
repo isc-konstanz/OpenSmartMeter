@@ -27,11 +27,16 @@ public class DeviceAddress extends Preferences {
 
     public static final PreferenceType TYPE = PreferenceType.ADDRESS_DEVICE;
 
+    public static final String SERIAL_PORT_KEY = "serialPort";
+
+    public static final String ADDRESS_KEY = "address";
+    public static final String ADDRESS_DEFAULT = "";
+
     @Option
     private String serialPort;
 
     @Option
-    private String address = "";
+    private String address = ADDRESS_DEFAULT;
 
     @Override
     public PreferenceType getPreferenceType() {
@@ -45,4 +50,5 @@ public class DeviceAddress extends Preferences {
     public String getAddress() {
     	return address;
     }
+
 }
