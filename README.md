@@ -27,7 +27,20 @@ emonmuc remove smartmeter
 ~~~
 
 This shell command will set up the driver, as instructed in the [setup script](setup.sh).  
-If there is the need to manually install the driver, the separate [installation guide](docs/LinuxInstall.md) may be followed.
+If there is the need to manually install the driver, a separate [installation guide](docs/LinuxInstall.md) may be followed.
+
+
+## 1.1 Install RXTX 
+
+RXTX is a Java native library providing serial and parallel communication for the Java virtual machine. It is a necessary dependency for many communication devices, using e.g. RS485.
+
+To install, download the binaries via debian repository:
+
+~~~
+sudo apt-get install librxtx-java
+~~~
+
+If the serial port is not connected to the Raspberry Pi via e.g. an USB interface but the Raspberrys internal UART pins, the [Serial Port should be prepared](https://github.com/isc-konstanz/emonmuc/blob/master/docs/LinuxSerialPort.md) accordingly.
 
 
 ----------
