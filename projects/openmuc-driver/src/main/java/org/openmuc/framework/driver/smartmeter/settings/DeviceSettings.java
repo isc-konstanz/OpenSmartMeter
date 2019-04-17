@@ -27,6 +27,8 @@ public class DeviceSettings extends Preferences {
 
     public static final PreferenceType TYPE = PreferenceType.SETTINGS_DEVICE;
 
+    public static final String MODE_KEY = "mode";
+
     public static final String BAUD_RATE_KEY = "baudRate";
 
     public static final String TIMEOUT_KEY = "timeout";

@@ -28,7 +28,7 @@ public class DeviceScanSettings extends Preferences {
     public static final PreferenceType TYPE = PreferenceType.SETTINGS_SCAN_DEVICE;
 
     @Option
-    private String serialPort;
+    private ProtocolMode mode;
 
     @Option
     private int baudRate = -1;
@@ -41,8 +41,8 @@ public class DeviceScanSettings extends Preferences {
         return TYPE;
     }
 
-    public String getSerialPort() {
-        return serialPort;
+    public ProtocolMode getMode() {
+        return mode;
     }
 
     public int getBaudRate() {

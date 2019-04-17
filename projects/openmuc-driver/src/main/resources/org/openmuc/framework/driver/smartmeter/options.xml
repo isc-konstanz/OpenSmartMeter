@@ -151,7 +151,7 @@
     </deviceSettings>
 
     <deviceScanSettings>
-      <option id="serialPort"></option>
+      <option id="mode"></option>
       <option id="baudRate"></option>
       <option id="timeout"></option>
     </deviceScanSettings>

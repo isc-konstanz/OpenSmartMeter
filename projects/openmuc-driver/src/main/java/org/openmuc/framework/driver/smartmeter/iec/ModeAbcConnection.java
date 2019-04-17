@@ -101,11 +101,16 @@ public class ModeAbcConnection implements Connection {
         List<ChannelScanInfo> scanInfos = new ArrayList<>(dataSets.size());
         for (DataSet dataSet : dataSets) {
             String description = dataSet.getAddress()+" ["+dataSet.getUnit()+"]";
+            boolean readable = true;
+            boolean writable = false;
             try {
                 Double.parseDouble(dataSet.getValue());
-                scanInfos.add(new ChannelScanInfo(dataSet.getAddress(), description, ValueType.DOUBLE, null));
+                scanInfos.add(new ChannelScanInfo(dataSet.getAddress(), description, 
+                		ValueType.DOUBLE, null, readable, writable));
+                
             } catch (NumberFormatException e) {
-                scanInfos.add(new ChannelScanInfo(dataSet.getAddress(), description, ValueType.STRING, dataSet.getValue().length()));
+                scanInfos.add(new ChannelScanInfo(dataSet.getAddress(), description, 
+                		ValueType.STRING, dataSet.getValue().length(), readable, writable));
             }
         }
         return scanInfos;

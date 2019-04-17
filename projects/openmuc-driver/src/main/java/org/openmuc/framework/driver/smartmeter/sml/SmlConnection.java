@@ -40,6 +40,11 @@ import org.openmuc.framework.driver.spi.ChannelValueContainer;
 import org.openmuc.framework.driver.spi.Connection;
 import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
+import org.openmuc.jrxtx.DataBits;
+import org.openmuc.jrxtx.FlowControl;
+import org.openmuc.jrxtx.Parity;
+import org.openmuc.jrxtx.SerialPortBuilder;
+import org.openmuc.jrxtx.StopBits;
 import org.openmuc.jsml.structures.SmlListEntry;
 
 public class SmlConnection implements Connection {
@@ -57,7 +62,14 @@ public class SmlConnection implements Connection {
         if (baudRate < 0) {
             baudRate = 9600;
         }
-        listener = new SmlListener(this, address.getSerialPort(), baudRate);
+        SerialPortBuilder serialPortBuilder = SerialPortBuilder.newBuilder(address.getSerialPort());
+        serialPortBuilder.setBaudRate(baudRate)
+                .setDataBits(DataBits.DATABITS_8)
+                .setStopBits(StopBits.STOPBITS_1)
+                .setParity(Parity.NONE)
+                .setFlowControl(FlowControl.RTS_CTS);
+        
+        listener = new SmlListener(this, serialPortBuilder.build(), baudRate);
     }
 
     @Override

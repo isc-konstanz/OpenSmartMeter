@@ -37,12 +37,7 @@ import org.openmuc.framework.driver.smartmeter.SmartMeterDriver;
 import org.openmuc.framework.driver.spi.ChannelRecordContainer;
 import org.openmuc.framework.driver.spi.Connection;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
-import org.openmuc.jrxtx.DataBits;
-import org.openmuc.jrxtx.FlowControl;
-import org.openmuc.jrxtx.Parity;
 import org.openmuc.jrxtx.SerialPort;
-import org.openmuc.jrxtx.SerialPortBuilder;
-import org.openmuc.jrxtx.StopBits;
 import org.openmuc.jsml.structures.ASNObject;
 import org.openmuc.jsml.structures.EMessageBody;
 import org.openmuc.jsml.structures.Integer16;
@@ -65,8 +60,7 @@ import org.slf4j.LoggerFactory;
 public class SmlListener implements Runnable {
     private static Logger logger = LoggerFactory.getLogger(SmlListener.class);
 
-    private final Connection context;
-
+    private Connection context;
     private RecordsReceivedListener listener;
     private List<ChannelRecordContainer> containers;
 
@@ -78,17 +72,10 @@ public class SmlListener implements Runnable {
     protected long entryTime = -1;
     protected List<SmlListEntry> entries = Collections.synchronizedList(new ArrayList<SmlListEntry>());
 
-    public SmlListener(Connection context, String serialPortName, int baudRate) throws IOException {
-        SerialPortBuilder serialPortBuilder = SerialPortBuilder.newBuilder(serialPortName);
-        serialPortBuilder.setBaudRate(baudRate)
-                .setDataBits(DataBits.DATABITS_8)
-                .setStopBits(StopBits.STOPBITS_1)
-                .setParity(Parity.NONE)
-                .setFlowControl(FlowControl.RTS_CTS);
-        
-        this.serialPort = serialPortBuilder.build();
-        this.receiver = new SerialReceiver(serialPort);
+    public SmlListener(Connection context, SerialPort serialPort, int baudRate) throws IOException {
         this.context = context;
+        this.serialPort = serialPort;
+        this.receiver = new SerialReceiver(serialPort);
     }
 
     public synchronized void register(RecordsReceivedListener listener, List<ChannelRecordContainer> containers) {
@@ -111,7 +98,7 @@ public class SmlListener implements Runnable {
                 serialPort.close();
             }
         } catch (IOException e) {
-            logger.warn("Error, while closing serial port.", e);
+            logger.warn("Error while closing serial port.", e);
         }
     }
 
@@ -119,26 +106,12 @@ public class SmlListener implements Runnable {
     public void run() {
         while (this.running) {
             try {
-                SmlFile smlFile = receiver.getSMLFile();
-                
-                List<SmlMessage> messages = smlFile.getMessages();
-                for (SmlMessage message : messages) {
-                    EMessageBody tag = message.getMessageBody().getTag();
-                    
-                    if (tag != EMessageBody.GET_LIST_RESPONSE) {
-                        continue;
-                    }
-                	entryTime = System.currentTimeMillis();
-                    entries.clear();
-                    
-                    SmlGetListRes getListResult = (SmlGetListRes) message.getMessageBody().getChoice();
-                    SmlListEntry[] smlListEntries = getListResult.getValList().getValListEntry();
-                    entries.addAll(new ArrayList<SmlListEntry>(Arrays.asList(smlListEntries)));
-                }
+            	entryTime = System.currentTimeMillis();
+                entries.clear();
+                entries.addAll(readEntries());
                 if (listener != null) {
                 	listener.newRecords(parseEntries(containers));
                 }
-                
             } catch (InterruptedIOException e) {
             } catch (IOException e) {
                 listener.connectionInterrupted(SmartMeterDriver.info.getId(), context);
@@ -146,7 +119,25 @@ public class SmlListener implements Runnable {
         }
     }
 
-    protected synchronized List<ChannelRecordContainer> parseEntries(List<ChannelRecordContainer> containers) {
+    public synchronized List<SmlListEntry> readEntries() throws IOException, InterruptedIOException {
+        SmlFile smlFile = receiver.getSMLFile();
+        
+        List<SmlMessage> messages = smlFile.getMessages();
+        for (SmlMessage message : messages) {
+            EMessageBody tag = message.getMessageBody().getTag();
+            
+            if (tag != EMessageBody.GET_LIST_RESPONSE) {
+                continue;
+            }
+            SmlGetListRes getListResult = (SmlGetListRes) message.getMessageBody().getChoice();
+            SmlListEntry[] smlListEntries = getListResult.getValList().getValListEntry();
+            
+            return new ArrayList<SmlListEntry>(Arrays.asList(smlListEntries));
+        }
+        throw new IOException("Error while reading SML message");
+    }
+
+    public synchronized List<ChannelRecordContainer> parseEntries(List<ChannelRecordContainer> containers) {
         for (ChannelRecordContainer container : containers) {
         	if (entryTime < 0) {
                 container.setRecord(new Record(Flag.NO_VALUE_RECEIVED_YET));

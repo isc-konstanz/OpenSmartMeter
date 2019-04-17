@@ -61,8 +61,6 @@ public class Iec62056 {
     protected final DataOutputStream os;
     protected final DataInputStream is;
 
-    protected ModeDListener listener = null;
-
     protected Iec62056(Iec62056Builder builder) throws IOException {
     	settings = builder.settings();
         serialPort = builder.serialPort();
@@ -274,45 +272,13 @@ public class Iec62056 {
             logger.debug("Changing baud rate from {}", serialPort.getBaudRate(), settings.getBaudRate(ProtocolMode.D));
             serialPort.setBaudRate(settings.getBaudRate(ProtocolMode.D));
         }
-        this.listener = listener;
         
         logger.debug("Starting to listen for mode D messages");
-        new ModeDReceiver().start();
+        new ModeDReceiver(listener, serialPort).start();
     }
 
     public Settings getSettings() {
     	return settings;
-    }
-
-    private class ModeDReceiver extends Thread {
-
-        @Override
-        public void run() {
-            while (!isClosed()) {
-                try {
-                    IdentificationMessage identificationMessage = new IdentificationMessage(is);
-                    listener.newDataMessage(DataMessage.readModeD(is, identificationMessage, serialPort));
-                } catch (Exception e) {
-                    if (isClosed()) {
-                        break;
-                    }
-                    listener.exceptionWhileListening(e);
-
-                    int numBytesInStream;
-                    try {
-                        numBytesInStream = is.available();
-                        if (numBytesInStream > 0) {
-                            byte[] bytesInStream = new byte[numBytesInStream];
-                            is.read(bytesInStream);
-                            if (logger.isDebugEnabled()) {
-                                logger.debug("Cleared input stream because of exception. Bytes read from stream: {}", bytesInStream);
-                            }
-                        }
-                    } catch (IOException e1) {
-                    }
-                }
-            }
-        }
     }
 
 }
