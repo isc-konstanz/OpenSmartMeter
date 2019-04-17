@@ -18,73 +18,88 @@
  * along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package org.openmuc.framework.driver.smartmeter;
+package org.openmuc.framework.driver.smartmeter.iec;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.openmuc.framework.data.DoubleValue;
+import org.openmuc.framework.data.Flag;
 import org.openmuc.framework.data.Record;
 import org.openmuc.framework.data.StringValue;
+import org.openmuc.framework.driver.smartmeter.SmartMeterDriver;
 import org.openmuc.framework.driver.spi.ChannelRecordContainer;
-import org.openmuc.framework.driver.spi.ConnectionException;
+import org.openmuc.framework.driver.spi.Connection;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
-import org.openmuc.iec62056.ModeDListener;
 import org.openmuc.iec62056.data.DataMessage;
 import org.openmuc.iec62056.data.DataSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class Iec62056Listener implements ModeDListener {
-    private static final Logger logger = LoggerFactory.getLogger(Iec62056Listener.class);
+public class ModeDListener implements org.openmuc.iec62056.ModeDListener {
+
+    private final Connection context;
 
     private RecordsReceivedListener listener;
     private List<ChannelRecordContainer> containers;
 
-    public synchronized void registerOpenMucListener(List<ChannelRecordContainer> containers,
-            RecordsReceivedListener listener) throws ConnectionException {
-        this.listener = listener;
-        this.containers = containers;
+    protected long dataSetTime = -1;
+    protected List<DataSet> dataSets = Collections.synchronizedList(new ArrayList<DataSet>());
+
+    protected ModeDListener() {
+    	this(null);
     }
 
-    public synchronized void unregisterOpenMucListener() {
-        listener = null;
+    public ModeDListener(Connection context) {
+    	this.context = context;
+    }
+
+    public synchronized void register(RecordsReceivedListener listener, List<ChannelRecordContainer> containers) {
+        this.containers = containers;
+        this.listener = listener;
+    }
+
+    public synchronized void deregister() {
         containers = null;
+        listener = null;
     }
 
     @Override
-    public void newDataMessage(DataMessage dataMessage) {
-        long time = System.currentTimeMillis();
-        List<DataSet> dataSets = dataMessage.getDataSets();
-        newRecord(dataSets, time);
+    public synchronized void newDataMessage(DataMessage dataMessage) {
+        dataSetTime = System.currentTimeMillis();
+        dataSets.clear();
+        dataSets.addAll(dataMessage.getDataSets());
+        if (listener != null) {
+        	listener.newRecords(parseDataSets(containers));
+        }
     }
 
-    private synchronized void newRecord(List<DataSet> dataSets, long time) {
-        List<ChannelRecordContainer> newContainers = new ArrayList<>();
-
+    protected synchronized List<ChannelRecordContainer> parseDataSets(List<ChannelRecordContainer> containers) {
         for (ChannelRecordContainer container : containers) {
+        	if (dataSetTime < 0) {
+                container.setRecord(new Record(Flag.NO_VALUE_RECEIVED_YET));
+        		continue;
+        	}
             for (DataSet dataSet : dataSets) {
                 if (dataSet.getAddress().equals(container.getChannelAddress())) {
                     String value = dataSet.getValue();
-                    if (value != null) {
+                	if (value != null) {
                         try {
-                            container.setRecord(
-                                    new Record(new DoubleValue(Double.parseDouble(dataSet.getValue())), time));
-                            newContainers.add(container);
+                            container.setRecord(new Record(new DoubleValue(Double.parseDouble(dataSet.getValue())), dataSetTime));
+                        
                         } catch (NumberFormatException e) {
-                            container.setRecord(new Record(new StringValue(dataSet.getValue()), time));
+                            container.setRecord(new Record(new StringValue(dataSet.getValue()), dataSetTime));
                         }
                     }
                     break;
                 }
             }
         }
-        listener.newRecords(newContainers);
+        return containers;
     }
 
     @Override
     public void exceptionWhileListening(Exception e) {
-        logger.info("Exception while listening. Message: " + e.getMessage());
+    	listener.connectionInterrupted(SmartMeterDriver.info.getId(), context);
     }
 
 }

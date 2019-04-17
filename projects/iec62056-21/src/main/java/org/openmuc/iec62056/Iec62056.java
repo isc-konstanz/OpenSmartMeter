@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.openmuc.iec62056.Iec62056Builder.Settings;
 import org.openmuc.iec62056.data.AcknowledgeMode;
 import org.openmuc.iec62056.data.AcknowledgeRequest;
 import org.openmuc.iec62056.data.AuthenticationRequest;
@@ -42,7 +43,6 @@ import org.openmuc.iec62056.data.IdentificationMessage;
 import org.openmuc.iec62056.data.IdentificationRequest;
 import org.openmuc.iec62056.data.ProtocolControlCharacter;
 import org.openmuc.iec62056.data.ProtocolMode;
-import org.openmuc.iec62056.data.Settings;
 import org.openmuc.jrxtx.SerialPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,9 +63,9 @@ public class Iec62056 {
 
     protected ModeDListener listener = null;
 
-    protected Iec62056(SerialPort serialPort, Settings settings) throws IOException {
-    	this.settings = settings;
-        this.serialPort = serialPort;
+    protected Iec62056(Iec62056Builder builder) throws IOException {
+    	settings = builder.settings();
+        serialPort = builder.serialPort();
         is = new DataInputStream(serialPort.getInputStream());
         os = new DataOutputStream(new BufferedOutputStream(serialPort.getOutputStream()));
     }
@@ -278,6 +278,10 @@ public class Iec62056 {
         
         logger.debug("Starting to listen for mode D messages");
         new ModeDReceiver().start();
+    }
+
+    public Settings getSettings() {
+    	return settings;
     }
 
     private class ModeDReceiver extends Thread {

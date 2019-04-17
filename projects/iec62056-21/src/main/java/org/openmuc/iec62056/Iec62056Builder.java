@@ -22,7 +22,10 @@ package org.openmuc.iec62056;
 
 import java.io.IOException;
 
-import org.openmuc.iec62056.data.Settings;
+import org.openmuc.iec62056.data.AcknowledgeMode;
+import org.openmuc.iec62056.data.AuthenticationRequest;
+import org.openmuc.iec62056.data.IdentificationRequest;
+import org.openmuc.iec62056.data.ProtocolMode;
 import org.openmuc.iec62056.serial.SerialPortFactory;
 import org.openmuc.jrxtx.SerialPort;
 
@@ -33,27 +36,34 @@ import org.openmuc.jrxtx.SerialPort;
  */
 public class Iec62056Builder {
 
-    private final String serialPortName;
+    final String serialPortName;
 
-    private String address = "";
-    private String password = null;
-    private String msgStartChars = "/?";
+    String address = "";
+    String password = null;
+    String msgStartChars = "/?";
 
     // -1 indicates that the default initial baud rate should be used (i.e. 300 for modes A, B and C and 2400 for mode D
-    private int baudRate = -1;
-    private int baudRateChangeDelay = 0;
-    private boolean baudRateHandshake = true;
+    int baudRate = -1;
+    int baudRateChangeDelay = 0;
+    boolean baudRateHandshake = true;
 
-    private int timeout = 2000;
+    int timeout = 2000;
 
     /**
      * Create an Iec62056Port builder.
      * 
      * @param serialPortName
-     *            examples for serial port identifiers on Linux are "/dev/ttyS0" or "/dev/ttyUSB0" and on Windows
-     *            "COM1"
+     *            examples for serial port identifiers on Linux are "/dev/ttyS0" or "/dev/ttyUSB0" and on Windows "COM1"
+     * @return The builder
+     * 
      */
-    public Iec62056Builder(String serialPortName) {
+    public static Iec62056Builder create(String serialPortName) 
+    		throws IllegalArgumentException {
+        return new Iec62056Builder(serialPortName);
+    }
+
+    private Iec62056Builder(String serialPortName) 
+    		throws IllegalArgumentException {
         if (serialPortName == null) {
             throw new IllegalArgumentException("serialPort may not be NULL");
         }
@@ -174,19 +184,83 @@ public class Iec62056Builder {
      *             (e.g. when the serial port is occupied).
      */
     public Iec62056 build() throws IOException {
-        return new Iec62056(open(), setup());
+        return new Iec62056(this);
     }
 
-    public Settings setup() throws IOException {
-    	return new Settings(address, password, msgStartChars, 
-				baudRate, baudRateChangeDelay, baudRateHandshake, timeout);
+    protected Settings settings() throws IOException {
+        return new Settings(this);
     }
 
-    public SerialPort open() throws IOException {
+    protected SerialPort serialPort() throws IOException {
         SerialPort serialPort = SerialPortFactory.newSerialPort(serialPortName);
         serialPort.setSerialPortTimeout(timeout);
         
         return serialPort;
     }
 
+    public class Settings {
+
+        private final int baudRate;
+        private final int baudRateChangeDelay;
+        private final boolean handshake;
+
+        private final int timeout;
+
+        private final AuthenticationRequest authenticationRequest;
+        private final IdentificationRequest identificationRequest;
+
+        protected Settings(Iec62056Builder builder) throws IOException {
+            this.baudRate = builder.baudRate;
+            this.baudRateChangeDelay = builder.baudRateChangeDelay;
+            this.handshake = builder.baudRateHandshake;
+            this.timeout = builder.timeout;
+            
+            identificationRequest = new IdentificationRequest(builder.address, builder.msgStartChars);
+            authenticationRequest = builder.password == null ? null : new AuthenticationRequest(builder.password);
+        }
+
+        public boolean hasAuthentication() {
+            return authenticationRequest != null;
+        }
+
+        public AuthenticationRequest getAuthenticationRequest() {
+            return authenticationRequest;
+        }
+
+        public IdentificationRequest getIdentificationRequest() {
+            return identificationRequest;
+        }
+
+        public AcknowledgeMode getAcknowledgeMode() {
+            return hasAuthentication() ? AcknowledgeMode.PROGRAMMING : AcknowledgeMode.DATA_READOUT;
+        }
+
+        public int getBaudRate() {
+            return getBaudRate(ProtocolMode.A);
+        }
+
+        public int getBaudRate(ProtocolMode mode) {
+            if (baudRate > 0) {
+                return baudRate;
+            }
+            switch(mode) {
+            case D:
+                return 2400;
+            default:
+                return 300;
+            }
+        }
+
+        public int getBaudRateChangeDelay() {
+            return baudRateChangeDelay;
+        }
+
+        public boolean hasHandshake() {
+            return handshake;
+        }
+
+        public int getTimeout() {
+            return timeout;
+        }
+    }
 }

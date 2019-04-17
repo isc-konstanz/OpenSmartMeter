@@ -40,7 +40,7 @@ To use any serial port with the emonmuc framework, the open-source project [jRxT
 The [Serial Port preparation guide](https://github.com/isc-konstanz/emonmuc/blob/master/docs/LinuxWiringPi.md) needs to be followed to do so.
 
 
-# 3 Finish
+## 1.3 Finish
 
 At last, don't forget to remove the released tarball to avoid cluttering of your system.
 

@@ -3,15 +3,12 @@
   <driver id="smartmeter">
     <name>Smart Meter</name>
     <description><![CDATA[
-        This driver implements the communication with metering devices as an IEC 62056-21 mode A-D master, 
-        which can register one or several slaves such as gas, water, heat, or electricity meters.<br>
-        To uniquely identify a channel, representing single registers, an OBIS code of the format A-B:C.D.E*F 
-        or an older EDIS code of the format C.D.E is used.<br><br>
-        For a list of all valid identifiers, consult the list of standardized OBIS codes administered by the 
-        DLMS UA <a href='http://dlms.com/documentation/listofstandardobiscodesandmaintenanceproces/index.html'>here</a>.
+        This driver implements the communication with metering devices speaking the Smart Message Language (SML)
+        or as an IEC 62056-21 mode A-D master, registering one or several slaves such as gas, water, heat, or 
+        electricity meters.
       ]]>
     </description>
-    
+
     <deviceAddress>
       <option id="serialPort">
         <name>Serial port</name>
@@ -31,20 +28,37 @@
         <description><![CDATA[
             The address to uniquely identify a device, representing an IEC62056-21 slave.<br>
             For many devices, this is a number that can be read off a label on the meter.<br><br>
-            <i>If left empty, a single meter can be addressed without an identifier.<i>
+            <i>Only used for modes A, B and C. If left empty, a single meter can be addressed without an identifier.</i>
           ]]>
         </description>
         <mandatory>false</mandatory>
         <type>STRING</type>
       </option>
     </deviceAddress>
-    
+
     <deviceSettings>
+      <option id="mode">
+        <name>Protocol mode</name>
+        <description><![CDATA[
+            The protocol mode to use.<br>
+            IEC 62056-21 mode A, B and C polls data from the meter, while mode D and 
+            SML listens for pushed data by the meter.
+          ]]>
+        </description>
+        <mandatory>true</mandatory>
+        <type>STRING</type>
+        <selection>
+          <item value="SML">Smart Meter Language</item>
+          <item value="ABC">IEC 62056-21 Mode A,B&amp;C</item>
+          <item value="D">IEC 62056-21 Mode D</item>
+        </selection>
+      </option>
       <option id="msgStartChars">
         <name>Request message start character</name>
         <description><![CDATA[
             The start character may be used for manufacture specific identification request messages.
-            With this option the default start character can be changed.
+            With this option the default start character can be changed.<br><br>
+            <i>Only used for modes A, B and C.</i>
           ]]>
         </description>
         <mandatory>false</mandatory>
@@ -53,7 +67,8 @@
       <option id="password">
         <name>Password</name>
         <description><![CDATA[
-            Authorization password to access the meters programmable mode.
+            Authorization password to access the meters programmable mode.<br><br>
+            <i>Only used for modes A, B and C.</i>
           ]]>
         </description>
         <mandatory>false</mandatory>
@@ -62,7 +77,8 @@
       <option id="handshake">
         <name>Handshake</name>
         <description><![CDATA[
-            Use initial handshake to negotiate baud rate.
+            Use initial handshake to negotiate baud rate.<br><br>
+            <i>Only used for mode C.</i>
           ]]>
         </description>
         <mandatory>false</mandatory>
@@ -87,17 +103,34 @@
         <name>Baud Rate (initial)</name>
         <description><![CDATA[
             The baud rate for the serial communication.<br>
-            Defaults are 300 baud for modes A, B and C and 2400 baud for Mode D.
+            Defaults are 300 baud for modes A, B and C, 2400 baud for Mode D 
+            and 9600 baud for SML.
           ]]>
         </description>
         <mandatory>false</mandatory>
         <type>INTEGER</type>
+        <selection>
+          <item value="-1">Default</item>
+          <item value="300">300</item>
+          <item value="1200">1200</item>
+          <item value="2400">2400</item>
+          <item value="4800">4800</item>
+          <item value="9600">9600</item>
+          <item value="19200">19200</item>
+          <item value="38400">38400</item>
+          <item value="57600">57600</item>
+          <item value="115200">115200</item>
+          <item value="230400">230400</item>
+          <item value="460800">460800</item>
+          <item value="921600">921600</item>
+        </selection>
         <default>-1</default>
       </option>
       <option id="retries">
         <name>Read retries</name>
         <description><![CDATA[
-            Defines the maximum number of read retries.
+            Defines the maximum number of read retries.<br><br>
+            <i>Only used for IEC 62056-21 mode A, B and C.</i>
           ]]>
         </description>
         <mandatory>false</mandatory>
@@ -107,7 +140,8 @@
       <option id="timeout">
         <name>Timeout</name>
         <description><![CDATA[
-            The timeout, after which the blocking call to read from the serial port will be canceled.
+            The timeout, after which the blocking call to read from the serial port will be canceled.<br><br>
+            <i>Only used for IEC 62056-21 mode A, B and C.</i>
           ]]>
         </description>
         <mandatory>false</mandatory>
@@ -115,20 +149,20 @@
         <default>2000</default>
       </option>
     </deviceSettings>
-    
+
     <deviceScanSettings>
       <option id="serialPort"></option>
       <option id="baudRate"></option>
       <option id="timeout"></option>
     </deviceScanSettings>
-    
+
     <channelAddress>
       <syntax>
         <keyValue>false</keyValue>
         <separator>;</separator>
       </syntax>
-      <option id="identification">
-        <name>Identification</name>
+      <option id="obis">
+        <name>OBIS code</name>
         <description><![CDATA[
             The ID is usually an OBIS code of the format A-B:C.D.E*F or an older EDIS code of the format C.D.E. 
             that specifies exactly what the value of this data set represents.<br>

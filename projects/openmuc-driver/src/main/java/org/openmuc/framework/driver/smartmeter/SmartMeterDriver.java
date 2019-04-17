@@ -28,9 +28,12 @@ import org.openmuc.framework.config.DriverInfo;
 import org.openmuc.framework.config.DriverInfoFactory;
 import org.openmuc.framework.config.ScanException;
 import org.openmuc.framework.config.ScanInterruptedException;
+import org.openmuc.framework.driver.smartmeter.iec.ModeAbcConnection;
+import org.openmuc.framework.driver.smartmeter.iec.ModeDConnection;
 import org.openmuc.framework.driver.smartmeter.settings.DeviceAddress;
 import org.openmuc.framework.driver.smartmeter.settings.DeviceScanSettings;
 import org.openmuc.framework.driver.smartmeter.settings.DeviceSettings;
+import org.openmuc.framework.driver.smartmeter.sml.SmlConnection;
 import org.openmuc.framework.driver.spi.Connection;
 import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.framework.driver.spi.DriverDeviceScanListener;
@@ -44,12 +47,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Component
-public final class Iec62056Driver implements DriverService {
-    private final static Logger logger = LoggerFactory.getLogger(Iec62056Driver.class);
+public final class SmartMeterDriver implements DriverService {
+    private final static Logger logger = LoggerFactory.getLogger(SmartMeterDriver.class);
 
-    private final DriverInfo info = DriverInfoFactory.getPreferences(Iec62056Driver.class);
+    public final static DriverInfo info = DriverInfoFactory.getPreferences(SmartMeterDriver.class);
 
-    public Iec62056Driver() {
+    public SmartMeterDriver() {
         logger.debug("IEC 62056 part 21 Driver instantiated. Expecting rxtxserial.so in: " + 
                 System.getProperty("java.library.path") + " for serial connections.");
     }
@@ -66,7 +69,7 @@ public final class Iec62056Driver implements DriverService {
         DeviceScanSettings settings = info.parse(settingsStr, DeviceScanSettings.class);
         Iec62056 connection = null;
         try {
-            connection = new Iec62056Builder(settings.getSerialPort())
+            connection = Iec62056Builder.create(settings.getSerialPort())
             		.setBaudRate(settings.getBaudRate())
             		.setTimeout(settings.getTimeout())
             		.build();
@@ -113,17 +116,16 @@ public final class Iec62056Driver implements DriverService {
         DeviceAddress address = info.parse(addressStr, DeviceAddress.class);
         DeviceSettings settings = info.parse(settingsStr, DeviceSettings.class);
         try {
-            Iec62056Builder builder = new Iec62056Builder(address.getSerialPort())
-                    .setDeviceAddress(address.getAddress())
-            		.setPassword(settings.getPassword())
-                    .setMsgStartChars(settings.getMsgStartChars())
-                    .enableBaudRateHandshake(settings.hasHandshake())
-                    .setBaudRateChangeDelay(settings.getBaudRateChangeDelay())
-                    .setBaudRate(settings.getBaudRate())
-    				.setTimeout(settings.getTimeout());
-            
-        	return new Iec62056Connection(builder.open(), builder.setup(), settings.getRetries());
-            
+        	switch(settings.getMode()) {
+			case ABC:
+	        	return new ModeAbcConnection(address, settings);
+			case D:
+	        	return new ModeDConnection(address, settings);
+			case SML:
+	        	return new SmlConnection(address, settings);
+			default:
+				throw new ConnectionException("Smart Meter Settings invalid: "+settingsStr);
+        	}
         } catch (Exception e) {
             throw new ConnectionException(e.getMessage());
         }

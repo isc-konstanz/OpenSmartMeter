@@ -52,6 +52,8 @@ public class SerialPortFactory {
                     .setParity(Parity.EVEN)
                     .setBaudRate(BAUDRATE_DEFAULT)
                     .build();
+            
+            ports.put(name, port);
         }
         return port;
     }

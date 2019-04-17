@@ -33,6 +33,9 @@ public class DeviceSettings extends Preferences {
     public static final int TIMEOUT_DEFAULT = 2000;
 
     @Option
+    private ProtocolMode mode;
+
+    @Option
     private String password = null;
 
     @Option
@@ -56,6 +59,10 @@ public class DeviceSettings extends Preferences {
     @Override
     public PreferenceType getPreferenceType() {
         return TYPE;
+    }
+
+    public ProtocolMode getMode() {
+        return mode;
     }
 
     public String getPassword() {

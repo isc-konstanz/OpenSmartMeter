@@ -18,7 +18,7 @@
  * along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package org.openmuc.framework.driver.smartmeter;
+package org.openmuc.framework.driver.smartmeter.iec;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -32,28 +32,41 @@ import org.openmuc.framework.data.Flag;
 import org.openmuc.framework.data.Record;
 import org.openmuc.framework.data.StringValue;
 import org.openmuc.framework.data.ValueType;
+import org.openmuc.framework.driver.smartmeter.settings.DeviceAddress;
+import org.openmuc.framework.driver.smartmeter.settings.DeviceSettings;
 import org.openmuc.framework.driver.spi.ChannelRecordContainer;
 import org.openmuc.framework.driver.spi.ChannelValueContainer;
 import org.openmuc.framework.driver.spi.Connection;
 import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
 import org.openmuc.iec62056.Iec62056;
+import org.openmuc.iec62056.Iec62056Builder;
 import org.openmuc.iec62056.data.DataMessage;
 import org.openmuc.iec62056.data.DataSet;
-import org.openmuc.iec62056.data.Settings;
-import org.openmuc.jrxtx.SerialPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Iec62056Connection extends Iec62056 implements Connection {
-    private final static Logger logger = LoggerFactory.getLogger(Iec62056Connection.class);
+public class ModeAbcConnection implements Connection {
+    private final static Logger logger = LoggerFactory.getLogger(ModeAbcConnection.class);
 
-    private int retries;
+    private final Iec62056 connection;
 
-    public Iec62056Connection(SerialPort serialPort, Settings settings, int retries) 
+    private final int retries;
+
+    public ModeAbcConnection(DeviceAddress address, DeviceSettings settings) 
             throws ConnectionException, IOException {
-        super(serialPort, settings);
-        this.retries = retries;
+        
+        Iec62056Builder builder = Iec62056Builder.create(address.getSerialPort())
+                .setDeviceAddress(address.getAddress())
+        		.setPassword(settings.getPassword())
+                .setMsgStartChars(settings.getMsgStartChars())
+                .enableBaudRateHandshake(settings.hasHandshake())
+                .setBaudRateChangeDelay(settings.getBaudRateChangeDelay())
+                .setBaudRate(settings.getBaudRate())
+				.setTimeout(settings.getTimeout());
+        
+        connection = builder.build();
+        retries = settings.getRetries();
         try {
             // FIXME: Sleep to avoid to early read after connection. Meters have some delay.
             Thread.sleep(settings.getTimeout());
@@ -64,13 +77,18 @@ public class Iec62056Connection extends Iec62056 implements Connection {
     }
 
     @Override
+    public void disconnect() {
+    	connection.close();
+    }
+
+    @Override
     public List<ChannelScanInfo> scanForChannels(String settings)
             throws UnsupportedOperationException, ScanException, ConnectionException {
         
         List<DataSet> dataSets;
         DataMessage dataMessage;
         try {
-            dataMessage = read();
+            dataMessage = connection.read();
             
         } catch (IOException e) {
             throw new ScanException(e);
@@ -94,6 +112,20 @@ public class Iec62056Connection extends Iec62056 implements Connection {
     }
 
     @Override
+    public void startListening(List<ChannelRecordContainer> containers, RecordsReceivedListener listener)
+            throws UnsupportedOperationException, ConnectionException {
+        
+        ModeDListener modeDListener = new ModeDListener(this);
+        modeDListener.register(listener, containers);
+        try {
+        	connection.listen(modeDListener);
+            
+        } catch (IOException e) {
+            throw new ConnectionException(e);
+        }
+    }
+
+    @Override
     public Object read(List<ChannelRecordContainer> containers, Object containerListHandle, String samplingGroup)
             throws UnsupportedOperationException, ConnectionException {
         
@@ -101,15 +133,15 @@ public class Iec62056Connection extends Iec62056 implements Connection {
         DataMessage dataMessage;
         for (int i = 0; i <= retries; ++i) {
             try {
-                if (settings.hasAuthentication()) {
+                if (connection.getSettings().hasAuthentication()) {
                 	List<String> addresses = new ArrayList<String>(containers.size());
                     for (ChannelRecordContainer container : containers) {
                     	addresses.add(container.getChannelAddress());
                     }
-                    dataMessage = read(addresses);
+                    dataMessage = connection.read(addresses);
                 }
                 else {
-                    dataMessage = read();
+                    dataMessage = connection.read();
                 }
                 dataSets = dataMessage.getDataSets();
                 if (dataSets != null && !dataSets.isEmpty()) {
@@ -129,8 +161,7 @@ public class Iec62056Connection extends Iec62056 implements Connection {
                 for (ChannelRecordContainer container : containers) {
                     container.setRecord(new Record(Flag.DRIVER_ERROR_READ_FAILURE));
                 }
-                close();
-                
+                connection.close();
                 throw new ConnectionException("Read failed: " + e.getMessage());
             }
         }
@@ -155,27 +186,9 @@ public class Iec62056Connection extends Iec62056 implements Connection {
     }
 
     @Override
-    public void startListening(List<ChannelRecordContainer> containers, RecordsReceivedListener listener)
-            throws UnsupportedOperationException, ConnectionException {
-        
-        Iec62056Listener iec62056Listener = new Iec62056Listener();
-        iec62056Listener.registerOpenMucListener(containers, listener);
-        try {
-            listen(iec62056Listener);
-            
-        } catch (IOException e) {
-            throw new ConnectionException(e);
-        }
-    }
-
-    @Override
     public Object write(List<ChannelValueContainer> containers, Object containerListHandle)
             throws UnsupportedOperationException, ConnectionException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public void disconnect() {
-        close();
-    }
 }

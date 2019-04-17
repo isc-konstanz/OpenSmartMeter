@@ -1,6 +1,8 @@
 
 def projectName = "OpenMUC Driver - Smart Meter"
 
+def jsmlVersion = '1.1.2'
+
 configurations.create('embed')
 
 repositories {
@@ -17,15 +19,18 @@ dependencies {
   compile group: "org.apache.felix", name: "org.apache.felix.scr", version: "2.0.10"
   compile group: "org.apache.felix", name: "org.apache.felix.http.api", version: "3.0.0"
 
+  compile group: 'org.openmuc', name: 'jsml',  version: jsmlVersion
+  embed   group: 'org.openmuc', name: 'jsml',  version: jsmlVersion
+
   compile project(':iec62056-21')
-  embed project(':iec62056-21')
+  embed   project(':iec62056-21')
 }
 
 jar {
   manifest {
     name = projectName
-    instruction 'Bundle-ClassPath', '.,lib/iec62056-21-' + cfgVersion + '.jar'
-    instruction 'Import-Package', '!org.openmuc.iec62056.*,org.openmuc.jrxtx,*' + jarDefaultImportPackageVersion
+    instruction 'Bundle-ClassPath', '.,lib/iec62056-21-' + cfgVersion + '.jar,lib/jsml-' + jsmlVersion + '.jar'
+    instruction 'Import-Package', '!org.openmuc.iec62056.*,!org.openmuc.jsml.*,org.openmuc.jrxtx.*,*' + jarDefaultImportPackageVersion
     instruction 'Export-Package', ''
   }
 }
