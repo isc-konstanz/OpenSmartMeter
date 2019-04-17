@@ -1,16 +1,20 @@
 {
-    "name": "DRS110M",
+    "name": "Import/Export",
     "category": "Meter",
-    "group": "B+G E-TECH",
-    "description": "<b>Energy Meter DRS110M</b>:<br>Current: 10(100)A<br>Voltage : 230V<br>50(60)Hz",
+    "group": "IEC 62056-21",
+    "description": "IEC 62056-21 bidirectional domestic supply meter",
 
     "driver": "smartmeter",
     "devices": [
         {
-            "description": "DRS110M Energy Meter",
-            "settings": "password:00000000,baudRate:9600,handshake:false"
+            "description": "IEC 62056-21 Meter",
+            "settings": "mode:ABC,baudRate:<baudRate>,baudRateChangeDelay:<baudRateChangeDelay>"
         }
     ],
+
+    "scan": {
+        "settings": "mode:ABC,baudRate:<baudRate>"
+    },
 
     "options": [
         {
@@ -18,6 +22,7 @@
             "name": "Serial port",
             "description": "The physical device address to uniquely identify a physical smart meter.<br><br><b>Example:</b><ol><li><b>Linux</b>: /dev/ttyS0 or /dev/ttyUSB0</li><li><b>Windows</b>: COM1</li></ol>",
             "type": "text",
+            "scan": true,
             "mandatory": true,
             "syntax": "deviceAddress"
         },
@@ -26,8 +31,56 @@
             "name": "Device address",
             "description": "The address to uniquely identify a device, representing an IEC62056-21 slave.<br>For many devices, this is a number that can be read off a label on the meter.<br><br><i>If left empty, a single meter can be addressed without an identifier.<i>",
             "type": "text",
-            "mandatory": true,
+            "mandatory": false,
             "syntax": "deviceAddress"
+        },
+        {
+            "id": "import",
+            "name": "Import OBIS code",
+            "description": "The OBIS code of the import register in the format A-B:C.D.E*F or an older EDIS code of the format C.D.E. that specifies exactly what the value of this data set represents.<br> C is the type of the measured quantity (e.g 1 = positive active power), D describes the measurement mode and E is the tariff (e.g. 0 for total or 1 for tariff 1 only) associated with this value.",
+            "type": "text",
+            "default": "1.8.0",
+            "mandatory": false
+        },
+        {
+            "id": "export",
+            "name": "Export OBIS code",
+            "description": "The OBIS code of the export register in the format A-B:C.D.E*F or an older EDIS code of the format C.D.E. that specifies exactly what the value of this data set represents.<br> C is the type of the measured quantity (e.g 1 = positive active power), D describes the measurement mode and E is the tariff (e.g. 0 for total or 1 for tariff 1 only) associated with this value.",
+            "type": "text",
+            "default": "2.8.0",
+            "mandatory": false
+        },
+        {
+            "id": "baudRate",
+            "name": "Baud rate",
+            "description": "The baud rate for the serial communication.<br>Defaults are 300 baud for modes A, B and C, 2400 baud for Mode D and 9600 baud for SML.",
+            "type": "text",
+            "select": [
+                { "name": "Default", "value": -1 },
+                { "name": "300", "value": 300 },
+		        { "name": "300", "value": 300 },
+		        { "name": "1200", "value": 1200 },
+		        { "name": "2400", "value": 2400 },
+		        { "name": "4800", "value": 4800 },
+		        { "name": "9600", "value": 9600 },
+		        { "name": "19200", "value": 19200 },
+		        { "name": "38400", "value": 38400 },
+		        { "name": "57600", "value": 57600 },
+		        { "name": "115200", "value": 115200 },
+		        { "name": "230400", "value": 230400 },
+		        { "name": "460800", "value": 460800 },
+		        { "name": "921600", "value": 921600 }
+            ],
+            "default": -1,
+            "mandatory": false
+        },
+        {
+            "id": "baudRateChangeDelay",
+            "name": "Baud rate change delay",
+            "description": "The baud rate change delay sets the waiting time in milliseconds between a baud rate change.<br>USB to serial converters often require a delay of up to 250ms.",
+            "type": "text",
+            "default": 0,
+            "mandatory": false
         },
         {
             "id": "refresh",
@@ -98,18 +151,34 @@
 
     "channels": [
         {
-            "name": "<node>*energy",
-            "address": "00000010",
+            "name": "<node>*import",
+            "address": "<import>",
             "logging": {"loggingInterval": "<refresh>", "loggingMaxInterval": 900000 },
-            "configs": {"samplingInterval": "<refresh>", "samplingTimeOffset": "<timeOffset>", "scalingFactor": 0.001, "valueType":"DOUBLE", "unit": "kWh"},
+            "configs": {"samplingInterval": "<refresh>", "samplingTimeOffset": "<timeOffset>", "valueType":"DOUBLE", "unit": "kWh"},
             "processList": [
                 {
                     "process": "log_to_feed",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Energy", "tag": "<name>"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Energy import", "tag": "<name>"}
                 },
                 {
                     "process": "kwh_to_power",
-                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Power", "tag": "<name>"}
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Power import", "tag": "<name>"}
+                }
+            ]
+        },
+        {
+            "name": "<node>*export",
+            "address": "<export>",
+            "logging": {"loggingInterval": "<refresh>", "loggingMaxInterval": 900000 },
+            "configs": {"samplingInterval": "<refresh>", "samplingTimeOffset": "<timeOffset>", "valueType":"DOUBLE", "unit": "kWh"},
+            "processList": [
+                {
+                    "process": "log_to_feed",
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Energy export", "tag": "<name>"}
+                },
+                {
+                    "process": "kwh_to_power",
+                    "arguments": {"type": "ProcessArg::FEEDID", "value": "Power export", "tag": "<name>"}
                 }
             ]
         }
@@ -117,14 +186,28 @@
 
     "feeds": [
         {
-            "name": "Energy",
+            "name": "Energy import",
             "tag": "<name>",
             "type": "DataType::REALTIME",
             "engine": "Engine::PHPTIMESERIES",
             "unit": "kWh"
         },
         {
-            "name": "Power",
+            "name": "Power import",
+            "tag": "<name>",
+            "type": "DataType::REALTIME",
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "W"
+        },
+        {
+            "name": "Energy export",
+            "tag": "<name>",
+            "type": "DataType::REALTIME",
+            "engine": "Engine::PHPTIMESERIES",
+            "unit": "kWh"
+        },
+        {
+            "name": "Power export",
             "tag": "<name>",
             "type": "DataType::REALTIME",
             "engine": "Engine::PHPTIMESERIES",
