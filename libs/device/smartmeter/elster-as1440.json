@@ -37,8 +37,8 @@
         {
             "id": "baudRate",
             "name": "Baud rate",
-            "description": "The baud rate for the serial communication.<br>Defaults are 300 baud for modes A, B and C, 2400 baud for Mode D and 9600 baud for SML.",
-            "type": "text",
+            "description": "The baud rate for the serial communication.",
+            "type": "selection",
             "select": [
                 { "name": "Default", "value": -1 },
                 { "name": "300", "value": 300 },
@@ -70,7 +70,7 @@
             "id": "refresh",
             "name": "Refresh interval",
             "description": "Defines at which interval the values of the meter device will be read.",
-            "type": "text",
+            "type": "selection",
             "select": [
                 { "name": "1 second", "value": 1000 },
                 { "name": "2 seconds", "value": 2000 },
@@ -102,7 +102,7 @@
             "id": "offset",
             "name": "Refresh offset",
             "description": "Defines the time waited, until the values of the meter device will be read. Necessary for multiple meters on the same line.",
-            "type": "text",
+            "type": "selection",
             "select": [
                 { "name": "None", "value": 0 },
                 { "name": "1 second", "value": 1000 },
