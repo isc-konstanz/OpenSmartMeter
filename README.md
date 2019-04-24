@@ -7,7 +7,10 @@ This project implements a communication protocol as part of [emonmuc](https://gi
 
 # OpenSmartMeter
 
-*This section is a placeholder and will be filled with a project description.*
+This protocol driver implements the communication with metering devices speaking the Smart Message Language (SML) or as an IEC 62056-21 mode A-D master, registering one or several slaves such as gas, water, heat, or electricity meters.
+
+The project is originally based on the [j62056](https://www.openmuc.org/iec-62056-21/) library and further depends on the [jSML](https://www.openmuc.org/sml/) project.  
+j62056 is an LGPL version 2.1 licensed implementation of the IEC 62056-21 protocol (modes A, B, C, and D) and jSML implements the Smart Message Language (SML), licensed under the Mozilla Public License v2.0. Both libraries were developed by the German research institute Fraunhofer ISE. To get in contact with the projects developers, visit their homepage at [openmuc.org](https://www.openmuc.org/).
 
 
 ## 1 Installation
