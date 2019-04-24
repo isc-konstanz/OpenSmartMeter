@@ -1,2 +1,3 @@
-org.openmuc.iec62056_21
-org.openmuc.iec62056_21.serial
+org.openmuc.iec62056
+org.openmuc.iec62056.data
+org.openmuc.iec62056.serial
