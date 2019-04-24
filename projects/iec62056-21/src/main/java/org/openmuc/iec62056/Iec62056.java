@@ -185,7 +185,7 @@ public class Iec62056 {
             
             byte b = is.readByte();
             if (b != 0x06) {
-            	throw new IOException("Received unexpected byte while waiting for acknowledgement: " + Converter.toShortHexString(b));
+            	throw new Iec62056Exception("Received unexpected byte while waiting for acknowledgement: " + Converter.toShortHexString(b));
             }
         }
         return identificationMessage;
@@ -211,8 +211,10 @@ public class Iec62056 {
      *             if any kind of IO error occurs
      * @throws InterruptedIOException
      *             if a timeout is thrown while waiting for the meter response
+     * @throws Iec62056Exception
+     *             if a protocol related error occurred, e.g. an invalid response
      */
-    public DataMessage read() throws IOException, InterruptedIOException {
+    public DataMessage read() throws IOException, InterruptedIOException, Iec62056Exception {
         DataMessage dataMessage = DataMessage.readModeABC(is, initiate());
         logger.debug("Received data message: {}", dataMessage.toString());
         
@@ -234,8 +236,10 @@ public class Iec62056 {
      *             if any kind of IO error occurs
      * @throws InterruptedIOException
      *             if a timeout is thrown while waiting for the meter response
+     * @throws Iec62056Exception
+     *             if a protocol related error occurred, e.g. an invalid response
      */
-    public DataMessage read(Collection<String> addresses) throws IOException, InterruptedIOException {
+    public DataMessage read(Collection<String> addresses) throws IOException, InterruptedIOException, Iec62056Exception {
         IdentificationMessage identificationMessage = initiate();
         
         List<DataSet> dataSets = new ArrayList<DataSet>();

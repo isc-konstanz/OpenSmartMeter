@@ -23,6 +23,8 @@ package org.openmuc.iec62056.data;
 import java.io.DataInputStream;
 import java.io.IOException;
 
+import org.openmuc.iec62056.Iec62056Exception;
+
 /**
  * A data message contains a list of data sets. Each data set consists of 3 fields "address", "value", and "unit". Each
  * of these fields is optional an may thus be equal to the empty string.
@@ -62,7 +64,7 @@ public class DataSet {
             b = is.readByte();
         }
         if (b != 0x01 && b != 0x02) {
-            throw new IOException("Received unexpected data message start byte: " + Converter.toShortHexString(b));
+            throw new Iec62056Exception("Received unexpected data message start byte: " + Converter.toShortHexString(b));
         }
         Bcc bcc = new Bcc();
         
@@ -70,14 +72,14 @@ public class DataSet {
         
         b = is.readByte();
         if (b != 0x03) {
-            throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
+            throw new Iec62056Exception("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
                     + ", expected: 0x03");
         }
         bcc.value ^= b;
         
         b = is.readByte();
         if (b != bcc.value) {
-            throw new IOException("Block check character (BCC) does not match. Received: " + Converter.toHexString(b)
+            throw new Iec62056Exception("Block check character (BCC) does not match. Received: " + Converter.toHexString(b)
                     + ", expected: " + Converter.toHexString(bcc.value));
         }
         return dataSet;
@@ -88,7 +90,7 @@ public class DataSet {
         if (b == '\r') {
             b = readByteAndCalculateBcc(is, bcc);
             if (b != '\n') {
-                throw new IOException(
+                throw new Iec62056Exception(
                         "Received unexpected data message start byte: " + Converter.toShortHexString(b));
             }
             b = readByteAndCalculateBcc(is, bcc);
@@ -102,7 +104,7 @@ public class DataSet {
         int i = 0;
         while (b != '(') {
             if (i == BUFFER_LENGTH) {
-                throw new IOException("Expected '(' character not received.");
+                throw new Iec62056Exception("Expected '(' character not received.");
             }
             if (b != 0x02) {
                 buffer[i] = b;
@@ -115,7 +117,7 @@ public class DataSet {
         int start = i;
         while ((b = readByteAndCalculateBcc(is, bcc)) != '*' && b != ')') {
             if (i == BUFFER_LENGTH) {
-                throw new IOException("Expected '*' or ')' character not received.");
+                throw new Iec62056Exception("Expected '*' or ')' character not received.");
             }
             buffer[i] = b;
             i++;
@@ -130,7 +132,7 @@ public class DataSet {
             start = i;
             while ((b = readByteAndCalculateBcc(is, bcc)) != ')') {
                 if (i == BUFFER_LENGTH) {
-                    throw new IOException("Expected ')' character not received.");
+                    throw new Iec62056Exception("Expected ')' character not received.");
                 }
                 buffer[i] = b;
                 i++;

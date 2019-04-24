@@ -23,6 +23,8 @@ package org.openmuc.iec62056.data;
 import java.io.DataInputStream;
 import java.io.IOException;
 
+import org.openmuc.iec62056.Iec62056Exception;
+
 /**
  * Format: '/' X X X Z Identification 'CR' 'LF'
  * <p>
@@ -44,7 +46,7 @@ public class IdentificationMessage {
     public IdentificationMessage(DataInputStream is) throws IOException {
         byte b = is.readByte();
         if (b != '/') {
-            throw new IOException(
+            throw new Iec62056Exception(
                     "Received unexpected identification message start byte: " + Converter.toShortHexString(b));
         }
 
@@ -123,7 +125,7 @@ public class IdentificationMessage {
         int i = 0;
         while (b != '\r') {
             if (i == 16) {
-                throw new IOException("Expected carriage return character not received");
+                throw new Iec62056Exception("Expected carriage return character not received");
             }
             identificationBytes[i] = b;
             i++;
@@ -133,7 +135,7 @@ public class IdentificationMessage {
 
         b = is.readByte();
         if (b != '\n') {
-            throw new IOException(
+            throw new Iec62056Exception(
                     "Received unexpected identification message end byte: " + Converter.toShortHexString(b));
         }
 

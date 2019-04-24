@@ -41,6 +41,7 @@ import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
 import org.openmuc.iec62056.Iec62056;
 import org.openmuc.iec62056.Iec62056Builder;
+import org.openmuc.iec62056.Iec62056Exception;
 import org.openmuc.iec62056.data.DataMessage;
 import org.openmuc.iec62056.data.DataSet;
 import org.slf4j.Logger;
@@ -150,19 +151,18 @@ public class ModeAbcConnection implements Connection {
                 }
                 dataSets = dataMessage.getDataSets();
                 if (dataSets != null && !dataSets.isEmpty()) {
-                    i = retries;
+                    break;
                 }
-            } catch (IOException e) {
-                logger.debug("Reading from device failed: " + e);
-                if (i < retries) {
-                    continue;
-                }
-                if (e instanceof InterruptedIOException) {
+            } catch (InterruptedIOException | Iec62056Exception e) {
+                logger.warn("Reading from device failed: " + e);
+                if (i >= retries) {
+                	Flag flag = (e instanceof Iec62056Exception) ? Flag.DRIVER_ERROR_READ_FAILURE : Flag.DRIVER_ERROR_TIMEOUT;
                     for (ChannelRecordContainer container : containers) {
-                        container.setRecord(new Record(Flag.TIMEOUT));
+                        container.setRecord(new Record(flag));
                     }
                     return null;
                 }
+            } catch (IOException e) {
                 for (ChannelRecordContainer container : containers) {
                     container.setRecord(new Record(Flag.DRIVER_ERROR_READ_FAILURE));
                 }

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.openmuc.iec62056.Iec62056Exception;
 import org.openmuc.jrxtx.SerialPort;
 
 /**
@@ -74,7 +75,7 @@ public class DataMessage {
             b = is.readByte();
         }
         if (b != 0x01 && b != 0x02) {
-            throw new IOException("Received unexpected data message start byte: " + Converter.toShortHexString(b));
+            throw new Iec62056Exception("Received unexpected data message start byte: " + Converter.toShortHexString(b));
         }
         Bcc bcc = new Bcc();
         
@@ -91,28 +92,28 @@ public class DataMessage {
             
             b = is.readByte();
             if (b != '\r') {
-                throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
+                throw new Iec62056Exception("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
                         + ", expected: '\r'(");
             }
             bcc.value ^= b;
             
             b = is.readByte();
             if (b != '\n') {
-                throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
+                throw new Iec62056Exception("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
                         + ", expected: '\n'");
             }
             bcc.value ^= b;
         }
         b = is.readByte();
         if (b != 0x03) {
-            throw new IOException("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
+            throw new Iec62056Exception("Received unexpected byte at end of data message: " + Converter.toShortHexString(b)
                     + ", expected: 0x03");
         }
         bcc.value ^= b;
         
         b = is.readByte();
         if (b != bcc.value) {
-            throw new IOException("Block check character (BCC) does not match. Received: " + Converter.toHexString(b)
+            throw new Iec62056Exception("Block check character (BCC) does not match. Received: " + Converter.toHexString(b)
                     + ", expected: " + Converter.toHexString(bcc.value));
         }
         return new DataMessage(id, dataSets);
@@ -142,7 +143,7 @@ public class DataMessage {
             b = is.readByte();
         }
         if (b != '\r') {
-            throw new IOException("Received unexpected byte at beginning of data message: "
+            throw new Iec62056Exception("Received unexpected byte at beginning of data message: "
                     + Converter.toShortHexString(b) + ", expected: '\r'(");
         }
 
@@ -151,7 +152,7 @@ public class DataMessage {
 
             b = is.readByte();
             if (b != '\n') {
-                throw new IOException("Received unexpected byte at beginning of data message: "
+                throw new Iec62056Exception("Received unexpected byte at beginning of data message: "
                         + Converter.toShortHexString(b) + ", expected: '\n'");
             }
             List<DataSet> dataSets = new ArrayList<>();
@@ -162,12 +163,12 @@ public class DataMessage {
             
             b = is.readByte();
             if (b != '\r') {
-                throw new IOException("Received unexpected byte at end of data message: "
+                throw new Iec62056Exception("Received unexpected byte at end of data message: "
                         + Converter.toShortHexString(b) + ", expected: '\r'(");
             }
             b = is.readByte();
             if (b != '\n') {
-                throw new IOException("Received unexpected byte at end of data message: "
+                throw new Iec62056Exception("Received unexpected byte at end of data message: "
                         + Converter.toShortHexString(b) + ", expected: '\n'");
             }
             return new DataMessage(id, dataSets);
