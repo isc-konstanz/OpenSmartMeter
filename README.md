@@ -46,6 +46,12 @@ sudo apt-get install librxtx-java
 If the serial port is not connected to the Raspberry Pi via e.g. an USB interface but the Raspberrys internal UART pins, the [Serial Port should be prepared](https://github.com/isc-konstanz/emonmuc/blob/master/docs/LinuxSerialPort.md) accordingly.
 
 
+## 2 Guide
+
+With the protocol driver being enabled, some first steps can be taken to learn about the features of this project.  
+For this purpose, a [First Steps guide](docs/FirstSteps.md) was documented to be followed.
+
+
 ----------
 
 # Contact
