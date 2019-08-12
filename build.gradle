@@ -1,160 +1,100 @@
+/*
+ * Copyright 2016-19 ISC Konstanz
+ *
+ * This file is part of OpenSmartMeter.
+ * For more information visit https://github.com/isc-konstanz/OpenSmartMeter.
+ *
+ * OpenSmartMeter is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * OpenSmartMeter is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 buildscript {
   repositories {
     maven {
-      url "https://plugins.gradle.org/m2/"
+      url 'https://plugins.gradle.org/m2/'
     }
   }
   dependencies {
-    classpath "biz.aQute.bnd:biz.aQute.bnd.gradle:4.1.0"
+    classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:4.1.0'
   }
 }
 
-apply from: "configuration.gradle"
+apply from: 'projects.gradle'
 
-configure(allprojects) {
-  version = cfgVersion
+def javaProjects() {
+  return allprojects.findAll { new File(it.projectDir, 'src').exists() }
 }
 
-configure(javaProjects) {
+configure(javaProjects()) {
+  apply plugin: 'maven'
+  apply plugin: 'java-library'
+  apply plugin: 'biz.aQute.bnd.builder'
+  apply plugin: 'eclipse'
 
-  apply plugin: "java-library"
-  apply plugin: "eclipse"
-  apply plugin: "osgi"
-  apply plugin: "maven"
-  apply plugin: "biz.aQute.bnd.builder"
+  group = projectGroup
 
-  group = cfgGroup
-
-  if (!project.properties.containsKey('cfgJavaVersion')) {
-    project.ext {
-      cfgJavaVersion = '1.8'
-    }
-  }
-
-  sourceCompatibility = cfgJavaVersion
-  targetCompatibility = cfgJavaVersion
+  version = projectVersion
 
   repositories {
     mavenCentral()
     mavenLocal()
   }
 
-  sourceSets {
-    sample
-    itest {
-      compileClasspath += sourceSets.main.runtimeClasspath
-    }
-  }
-
-  configurations {
-    jacoco
-    jacocoRuntime
-  }
-
   dependencies {
-    testCompile group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.3.2"
-    itestCompile group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.3.2"
-    testCompile group: "org.junit.vintage", name: "junit-vintage-engine", version: "5.3.2"
-    itestCompile group: "org.junit.vintage", name: "junit-vintage-engine", version: "5.3.2"
-    
-    jacoco group: 'org.jacoco', name: 'org.jacoco.ant', version: '0.8.2', classifier: 'nodeps'
-    jacocoRuntime group: 'org.jacoco', name: 'org.jacoco.agent', version: '0.8.2', classifier: 'runtime'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
   }
 
   jar {
     manifest {
-      version = project.version.replace("-",".");
+      version = project.version.replace('-','.');
+      attributes('Bundle-Vendor':      projectVendor,
+                 'Bundle-DocURL':      projectSite)
     }
   }
 
+  if (!project.properties.containsKey('javaVersion')) {
+    project.ext {
+      javaVersion = '1.8'
+    }
+  }
+
+  sourceCompatibility = javaVersion
+  targetCompatibility = javaVersion
+
   task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = "sources"
+    classifier = 'sources'
     from sourceSets.main.allSource
   }
 
   task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = "javadoc"
+    classifier = 'javadoc'
     from javadoc.destinationDir
   }
 
-  task instrument {
-    ext.outputDir = buildDir.path + '/classes-instrumented'
-    doLast {
-      ant.taskdef(name: 'instrument',
-                  classname: 'org.jacoco.ant.InstrumentTask',
-                  classpath: configurations.jacoco.asPath)
-      
-      sourceSets.main.output.classesDirs.each{ f ->
-        // Copy directories from main source to instrumented path
-	    copy {
-		  from f
-		  into buildDir.path + '/instrumented_classes'
-	    }
-      }
-
-      ant.instrument(destdir: outputDir) {
-        fileset(dir: buildDir.path + '/instrumented_classes')
-      }
-    }
-  }
-  
-  instrument.dependsOn classes
-  
-  gradle.taskGraph.whenReady { graph ->
-    if (graph.hasTask(instrument)) {
-      tasks.withType(Test) {
-        doFirst {
-          systemProperty 'jacoco-agent.destfile', buildDir.path + '/jacoco/tests.exec'
-          classpath = files(instrument.outputDir) + classpath + configurations.jacocoRuntime
-        }
-      }
-    }
-  }
-
-  task report {
-    doLast {
-      if (!file(buildDir.path + '/jacoco/tests.exec').exists()) {
-        return;
-      }
-      ant.taskdef(name: 'report',
-                  classname: 'org.jacoco.ant.ReportTask',
-                  classpath: configurations.jacoco.asPath)
-      ant.report() {
-        executiondata {
-          ant.file(file: buildDir.path + '/jacoco/tests.exec')
-        }
-        structure(name: 'Example') {
-           classfiles {
-             fileset(dir: buildDir.path + '/instrumented_classes')
-           }
-           sourcefiles {
-             fileset(dir: 'src/main/java')
-           }
-        }
-        html(destdir: buildDir.path + '/reports/jacoco')
-      }
-    }
-  }
-
-  report.dependsOn instrument
-  report.dependsOn test
-
   task jarAll(type: Copy) {
-    dependsOn(configurations.default.getAllArtifacts().getBuildDependencies())
-
     // Include the jar file created, as well as all artifacts:
-    from configurations.default.getAllArtifacts().getFiles()
+    from jar
     from sourcesJar
     from javadocJar
 
-    if (cfgCopyDependencies) {
+    if (copyDependencies) {
       // Includes all the dependencies:
       from configurations.default
     }
-    into rootDir.getPath() + "/build/libs"
+    into rootDir.getPath() + '/build/libs'
   }
 
-  build.dependsOn {jarAll}
+  build.dependsOn { jarAll }
 
   eclipse.pathVariables([GRADLE_USER_HOME:file(gradle.gradleUserHomeDir)])
   tasks.eclipse.dependsOn(cleanEclipse)
@@ -165,46 +105,61 @@ configure(javaProjects) {
   }
 
   javadoc {
-    exclude "**/internal/**"
-    exclude "**/java-gen/**"
-    exclude "**/app/**"
+    exclude '**/internal/**'
+    exclude '**/java-gen/**'
+    exclude '**/app/**'
   }
 }
 
 task javadocClean(type: Delete) {
-  delete rootDir.getPath() + "/docs/javadoc"
+  delete rootDir.getPath() + '/docs/javadoc'
 }
 
 task javadocAll(type: Javadoc) {
   dependsOn(javadocClean)
-  source docProjects.collect {
+  source javadocProjects.collect {
     project -> project.sourceSets.main.allJava
   }
-  exclude "**/internal/**"
-  exclude "**/java-gen/**"
-  exclude "**/app/**"
+  exclude '**/internal/**'
+  exclude '**/java-gen/**'
+  exclude '**/app/**'
 
-  destinationDir = new File(rootDir, "docs/javadoc")
+  destinationDir = new File(rootDir, 'docs/javadoc')
 
-  classpath = files(distributionProjects.collect { project ->
+  classpath = files(javadocProjects.collect { project ->
     project.sourceSets.main.compileClasspath })
 
-  classpath += files(distributionProjects.collect { project ->
+  classpath += files(javadocProjects.collect { project ->
     project.sourceSets.main.output })
 }
 
-task (tar, type: Tar) {
-  archiveName = project.name + "-" + project.version + ".tar.gz"
-  compression = Compression.GZIP
-  destinationDir = file("build/distributions/")
-}
-
-task release {
+task distribute(type: Tar) {
   dependsOn(distributionProjects.build)
   dependsOn(javadocAll)
-  dependsOn(tar)
-}
 
-subprojects {
-  task allDeps(type: DependencyReportTask) {}
+  compression = Compression.GZIP
+  archiveName = project.name + '-' + projectVersion + '.tar.gz'
+
+  from('build') {
+    for (Project distributionProject: distributionProjects) {
+      include 'libs/*' + distributionProject.name + '*' + projectVersion + '*.jar'
+    }
+  }
+  from('./') {
+    include 'LICENSE**'
+    include 'NOTICE**'
+    include 'conf/**'
+    include 'libs/**'
+    include 'licenses/**'
+  }
+
+  into('licenses') {
+    for (Project distributionProject: distributionProjects) {
+      from (distributionProject.getProjectDir().toString() + '/libs') {
+        exclude '**/*.jar'
+        exclude '**.jar'
+      }
+    }
+  }
+  destinationDir = file('build/dist/')
 }

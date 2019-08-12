@@ -18,6 +18,26 @@
  * along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-include 'core', 'bundle'
+archivesBaseName = 'iec62056-21'
+def projectName = 'IEC62056-21'
+def projectFullName = 'IEC62056 part 21'
+def projectDescription = 'The IEC62056-21 related code of the OpenSmartMeter project'
 
-project(':bundle').projectDir = file('bundles/openmuc/driver')
+dependencies {
+  api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+  api group: 'org.openmuc', name: 'jrxtx', version: '1.0.1'
+}
+
+eclipse {
+  project {
+    name = projectName
+  }
+}
+
+jar {
+  manifest {
+    attributes('Bundle-Name':        projectFullName,
+               'Bundle-Description': projectDescription,
+	           'Export-Package':     '*')
+  }
+}

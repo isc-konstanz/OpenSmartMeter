@@ -18,6 +18,24 @@
  * along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-include 'core', 'bundle'
+project.ext {
 
-project(':bundle').projectDir = file('bundles/openmuc/driver')
+  projectVersion = '2.1.0'
+
+  projectGroup = 'org.openmuc'
+
+  projectVendor = 'ISC Konstanz e.V.'
+  projectSite = 'https://github.com/isc-konstanz/OpenSmartMeter'
+
+  copyDependencies = false
+
+  distributionProjects = subprojects.findAll {
+    it.getPath() == ':core' ||
+    it.getPath() == ':bundle'
+  }
+
+  javadocProjects = distributionProjects.findAll {
+    it.getPath() == ':core'
+  }
+
+}

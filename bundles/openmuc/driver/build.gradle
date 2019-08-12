@@ -1,0 +1,65 @@
+/*
+ * Copyright 2016-19 ISC Konstanz
+ *
+ * This file is part of OpenSmartMeter.
+ * For more information visit https://github.com/isc-konstanz/OpenSmartMeter.
+ *
+ * OpenSmartMeter is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * OpenSmartMeter is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+archivesBaseName = 'openmuc-driver-smartmeter'
+def projectFullName = 'OpenMUC Driver - SmartMeter'
+def projectDescription = 'SmartMeter driver for the OpenMUC framework.'
+
+def jsmlVersion = '1.1.2'
+
+def jsmlJar = 'jsml-'+jsmlVersion+'.jar'
+def coreJar = 'iec62056-21-'+projectVersion+'.jar'
+
+dependencies {
+  implementation fileTree(dir: 'libs/openmuc', include: ['*.jar'])
+  implementation group: 'org.osgi', name: 'osgi.core', version: '7.0.0'
+  implementation group: 'org.osgi', name: 'org.osgi.service.component.annotations', version: '1.4.0'
+  implementation group: 'org.apache.felix', name: 'org.apache.felix.scr', version: '2.1.14'
+
+  implementation group: 'org.openmuc', name: 'jsml',  version: jsmlVersion
+
+  implementation project(':core')
+}
+
+eclipse {
+  project {
+    name = archivesBaseName
+  }
+}
+
+jar {
+  into('libs') {
+    from(configurations.default) {
+      include jsmlJar, coreJar
+    }
+  }
+  manifest {
+    attributes('Bundle-Name':        projectFullName,
+               'Bundle-Description': projectDescription,
+               'Bundle-ClassPath':   '.,libs/'+jsmlJar+',' +
+                                       'libs/'+coreJar,
+               'Import-Package':      '!org.openmuc.iec62056.*,' +
+			                          '!org.openmuc.jsml.*,' +
+                                       'org.openmuc.framework.*;version=0,' +
+									   'org.openmuc.jrxtx;version=0,' +
+                                       'org.slf4j;version=0',
+	           'Export-Package':     '')
+  }
+}
