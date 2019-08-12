@@ -35,7 +35,6 @@
             "description": "The baud rate for the serial communication.",
             "type": "selection",
             "select": [
-                { "name": "300", "value": 300 },
 		        { "name": "300", "value": 300 },
 		        { "name": "1200", "value": 1200 },
 		        { "name": "2400", "value": 2400 },

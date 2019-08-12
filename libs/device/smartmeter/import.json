@@ -50,7 +50,6 @@
             "select": [
                 { "name": "Default", "value": -1 },
                 { "name": "300", "value": 300 },
-		        { "name": "300", "value": 300 },
 		        { "name": "1200", "value": 1200 },
 		        { "name": "2400", "value": 2400 },
 		        { "name": "4800", "value": 4800 },
@@ -146,7 +145,7 @@
             "name": "<node>*energy",
             "address": "<import>",
             "logging": {"loggingInterval": "<refresh>", "loggingMaxInterval": 900000 },
-            "configs": {"samplingInterval": "<refresh>", "samplingTimeOffset": "<timeOffset>", "valueType":"DOUBLE", "unit": "kWh"},
+            "configs": {"samplingInterval": "<refresh>", "samplingTimeOffset": "<offset>", "valueType":"DOUBLE", "unit": "kWh"},
             "processList": [
                 {
                     "process": "log_to_feed",

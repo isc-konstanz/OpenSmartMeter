@@ -42,7 +42,6 @@
             "select": [
                 { "name": "Default", "value": -1 },
                 { "name": "300", "value": 300 },
-		        { "name": "300", "value": 300 },
 		        { "name": "1200", "value": 1200 },
 		        { "name": "2400", "value": 2400 },
 		        { "name": "4800", "value": 4800 },
