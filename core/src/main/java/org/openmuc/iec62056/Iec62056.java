@@ -144,18 +144,18 @@ public class Iec62056 {
         
         IdentificationRequest identificationRequest = settings.getIdentificationRequest();
         identificationRequest.send(os);
-        logger.debug("Sending {}", identificationRequest.toString());
+        logger.debug("Sending identification request {}", identificationRequest.toString());
         
         IdentificationMessage identificationMessage = new IdentificationMessage(is);
-        logger.debug("Received {}", identificationMessage.toString());
+        logger.debug("Received identification message {}", identificationMessage.toString());
         
-        if (identificationMessage.getProtocolMode() == ProtocolMode.C) {
+        if (identificationMessage.getProtocolMode() == ProtocolMode.C || settings.hasAuthentication()) {
         	int baudRate = settings.hasHandshake() ? identificationMessage.getBaudRate() : initBaudRate;
         	AcknowledgeMode mode = settings.getAcknowledgeMode();
             AcknowledgeRequest acknowledgeRequest = new AcknowledgeRequest(baudRate, 
             		ProtocolControlCharacter.NORMAL, mode);
             
-            logger.debug("Sending {}", acknowledgeRequest.toString());
+            logger.debug("Sending acknowledge request {}", acknowledgeRequest.toString());
             acknowledgeRequest.send(os);
             
             if (settings.hasHandshake() && settings.getBaudRateChangeDelay() > 0) {
@@ -168,8 +168,8 @@ public class Iec62056 {
             }
         }
         
-        if (identificationMessage.getProtocolMode() == ProtocolMode.B
-                || (identificationMessage.getProtocolMode() == ProtocolMode.C && settings.hasHandshake())) {
+        if ((identificationMessage.getProtocolMode() == ProtocolMode.B 
+                || (identificationMessage.getProtocolMode() == ProtocolMode.C) && settings.hasHandshake())) {
             logger.debug("Changing baud rate from {} to {}", 
             		serialPort.getBaudRate(), identificationMessage.getBaudRate());
             
@@ -177,12 +177,10 @@ public class Iec62056 {
         }
         
         if (settings.hasAuthentication()) {
-            if (identificationMessage.getProtocolMode() == ProtocolMode.C && settings.hasHandshake()) {
-            	DataSet.readDataSet(is);
-            }
+            DataSet.readDataSet(is);
         	AuthenticationRequest authenticationRequest = settings.getAuthenticationRequest();
         	authenticationRequest.send(os);
-            logger.debug("Sending {}", authenticationRequest.toString());
+            logger.debug("Sending authentication request {}", authenticationRequest.toString());
             
             byte b = is.readByte();
             if (b != 0x06) {

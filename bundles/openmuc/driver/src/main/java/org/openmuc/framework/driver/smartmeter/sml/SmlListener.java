@@ -22,36 +22,22 @@ package org.openmuc.framework.driver.smartmeter.sml;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.openmuc.framework.data.DoubleValue;
 import org.openmuc.framework.data.Flag;
 import org.openmuc.framework.data.Record;
-import org.openmuc.framework.data.StringValue;
-import org.openmuc.framework.data.Value;
 import org.openmuc.framework.driver.smartmeter.SmartMeterDriver;
 import org.openmuc.framework.driver.spi.ChannelRecordContainer;
 import org.openmuc.framework.driver.spi.Connection;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
 import org.openmuc.jrxtx.SerialPort;
-import org.openmuc.jsml.structures.ASNObject;
 import org.openmuc.jsml.structures.EMessageBody;
-import org.openmuc.jsml.structures.Integer16;
-import org.openmuc.jsml.structures.Integer32;
-import org.openmuc.jsml.structures.Integer64;
-import org.openmuc.jsml.structures.Integer8;
-import org.openmuc.jsml.structures.OctetString;
 import org.openmuc.jsml.structures.SmlFile;
 import org.openmuc.jsml.structures.SmlListEntry;
 import org.openmuc.jsml.structures.SmlMessage;
-import org.openmuc.jsml.structures.Unsigned16;
-import org.openmuc.jsml.structures.Unsigned32;
-import org.openmuc.jsml.structures.Unsigned64;
-import org.openmuc.jsml.structures.Unsigned8;
 import org.openmuc.jsml.structures.responses.SmlGetListRes;
 import org.openmuc.jsml.transport.SerialReceiver;
 import org.slf4j.Logger;
@@ -69,8 +55,7 @@ public class SmlListener implements Runnable {
 
     private volatile boolean running = true;
 
-    protected long entryTime = -1;
-    protected List<SmlListEntry> entries = Collections.synchronizedList(new ArrayList<SmlListEntry>());
+    protected final Map<String, SmlRecord> entries = Collections.synchronizedMap(new HashMap<String, SmlRecord>());
 
     public SmlListener(Connection context, SerialPort serialPort, int baudRate) throws IOException {
         this.context = context;
@@ -106,106 +91,57 @@ public class SmlListener implements Runnable {
     public void run() {
         while (this.running) {
             try {
-            	entryTime = System.currentTimeMillis();
-                entries.clear();
-                entries.addAll(readEntries());
+                readEntries();
                 if (listener != null) {
                 	listener.newRecords(parseEntries(containers));
                 }
             } catch (InterruptedIOException e) {
             } catch (IOException e) {
-                listener.connectionInterrupted(SmartMeterDriver.info.getId(), context);
+            	logger.warn("Error while reading SML entries: {}", e.getMessage());
+                if (listener != null) {
+                    listener.connectionInterrupted(SmartMeterDriver.info.getId(), context);
+                }
             }
         }
     }
 
-    public synchronized List<SmlListEntry> readEntries() throws IOException, InterruptedIOException {
-        SmlFile smlFile = receiver.getSMLFile();
+    public synchronized void readEntries() throws IOException, InterruptedIOException {
+        SmlFile file = receiver.getSMLFile();
         
-        List<SmlMessage> messages = smlFile.getMessages();
+    	long time = System.currentTimeMillis();
+        List<SmlMessage> messages = file.getMessages();
         for (SmlMessage message : messages) {
             EMessageBody tag = message.getMessageBody().getTag();
             
             if (tag != EMessageBody.GET_LIST_RESPONSE) {
                 continue;
             }
-            SmlGetListRes getListResult = (SmlGetListRes) message.getMessageBody().getChoice();
-            SmlListEntry[] smlListEntries = getListResult.getValList().getValListEntry();
-            
-            return new ArrayList<SmlListEntry>(Arrays.asList(smlListEntries));
+            SmlGetListRes result = (SmlGetListRes) message.getMessageBody().getChoice();
+            for (SmlListEntry entry : result.getValList().getValListEntry()) {
+            	try {
+            		SmlRecord record = new SmlRecord(entry, time);
+                    entries.put(record.getAddress(), record);
+                    
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Received record {} for {}", record, entry);
+                    }
+            	} catch (IllegalArgumentException e) {
+            		logger.warn("Received invalid value for entry: {}", SmlRecord.parseFullAddress(entry));
+            		//record = new SmlRecord(entry, Flag.DRIVER_ERROR_DECODING_RESPONSE_FAILED);
+            	}
+            }
         }
-        throw new IOException("Error while reading SML message");
     }
 
     public synchronized List<ChannelRecordContainer> parseEntries(List<ChannelRecordContainer> containers) {
         for (ChannelRecordContainer container : containers) {
-        	if (entryTime < 0) {
-                container.setRecord(new Record(Flag.NO_VALUE_RECEIVED_YET));
-        		continue;
+        	Record record = entries.get(container.getChannelAddress());
+        	if (record == null) {
+                record = new Record(Flag.NO_VALUE_RECEIVED_YET);
         	}
-            for (SmlListEntry entry : entries) {
-                String address = new String(entry.getObjName().getValue(), Charset.forName("US-ASCII"));
-                if (address.equals(container.getChannelAddress())) {
-                	Value value = parseEntry(entry);
-                	if (value == null) {
-                        container.setRecord(new Record(Flag.DRIVER_ERROR_READ_FAILURE));
-                	}
-                	else {
-                    	container.setRecord(new Record(value, entryTime));
-                	}
-                	break;
-                }
-            }
+        	container.setRecord(record);
         }
         return containers;
-    }
-
-    protected static Value parseEntry(SmlListEntry entry) {
-        double value = 0;
-        ASNObject obj = entry.getValue().getChoice();
-        if (obj.getClass().equals(Integer64.class)) {
-            Integer64 val = (Integer64) obj;
-            value = val.getVal();
-        }
-        else if (obj.getClass().equals(Integer32.class)) {
-            Integer32 val = (Integer32) obj;
-            value = val.getVal();
-        }
-        else if (obj.getClass().equals(Integer16.class)) {
-            Integer16 val = (Integer16) obj;
-            value = val.getVal();
-        }
-        else if (obj.getClass().equals(Integer8.class)) {
-            Integer8 val = (Integer8) obj;
-            value = val.getVal();
-        }
-        else if (obj.getClass().equals(Unsigned64.class)) {
-            Unsigned64 val = (Unsigned64) obj;
-            value = val.getVal();
-        }
-        else if (obj.getClass().equals(Unsigned32.class)) {
-            Unsigned32 val = (Unsigned32) obj;
-            value = val.getVal();
-        }
-        else if (obj.getClass().equals(Unsigned16.class)) {
-            Unsigned16 val = (Unsigned16) obj;
-            value = val.getVal();
-        }
-        else if (obj.getClass().equals(Unsigned8.class)) {
-            Unsigned8 val = (Unsigned8) obj;
-            value = val.getVal();
-        }
-        else if (obj.getClass().equals(OctetString.class)) {
-            OctetString val = (OctetString) obj;
-            return new StringValue(new String(val.getValue()));
-        }
-        else {
-        	return null;
-        }
-        byte scaler = entry.getScaler().getVal();
-        double scaledValue = value * Math.pow(10, scaler);
-        
-        return new DoubleValue(scaledValue);
     }
 
 }

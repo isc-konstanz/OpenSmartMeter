@@ -21,9 +21,9 @@
 package org.openmuc.framework.driver.smartmeter.sml;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -45,7 +45,6 @@ import org.openmuc.jrxtx.FlowControl;
 import org.openmuc.jrxtx.Parity;
 import org.openmuc.jrxtx.SerialPortBuilder;
 import org.openmuc.jrxtx.StopBits;
-import org.openmuc.jsml.structures.SmlListEntry;
 
 public class SmlConnection implements Connection {
 
@@ -70,19 +69,20 @@ public class SmlConnection implements Connection {
                 .setFlowControl(FlowControl.RTS_CTS);
         
         listener = new SmlListener(this, serialPortBuilder.build(), baudRate);
+        executor.execute(listener);
     }
 
     @Override
     public List<ChannelScanInfo> scanForChannels(String settings)
             throws UnsupportedOperationException, ScanException, ConnectionException {
-        
+    	
         List<ChannelScanInfo> channels = new LinkedList<ChannelScanInfo>();
-        for (SmlListEntry entry : listener.entries) {
-            String address = new String(entry.getObjName().getValue(), Charset.forName("US-ASCII"));
+        for (Entry<String, SmlRecord> entry : listener.entries.entrySet()) {
+        	SmlRecord record = entry.getValue();
+            String address = entry.getKey();
+            String description = record.getFullAddress()+" ["+record.getEntry().getUnit()+"]";
             
-            String description = address+" ["+entry.getUnit()+"]";
-            
-            Value value = SmlListener.parseEntry(entry);
+            Value value = record.getValue();
             ValueType valueType;
             Integer valueTypeLength = null;
         	if (value instanceof StringValue) {
@@ -125,7 +125,7 @@ public class SmlConnection implements Connection {
     public Object read(List<ChannelRecordContainer> containers, Object containerListHandle, String samplingGroup)
             throws UnsupportedOperationException, ConnectionException {
         
-    	listener.parseEntries(containers);
+    	this.listener.parseEntries(containers);
     	return null;
     }
 
