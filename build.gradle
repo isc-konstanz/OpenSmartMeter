@@ -141,9 +141,7 @@ task distribute(type: Tar) {
   archiveName = project.name + '-' + projectVersion + '.tar.gz'
 
   from('build') {
-    for (Project distributionProject: distributionProjects) {
-      include 'libs/*' + distributionProject.name + '*' + projectVersion + '*.jar'
-    }
+    include 'libs/*' + projectVersion + '*.jar'
   }
   from('./') {
     include 'LICENSE**'
