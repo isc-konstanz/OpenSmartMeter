@@ -1,7 +1,7 @@
 {
     "name": "AS1440",
     "category": "Meter",
-    "group": "Elster",
+    "group": "Elster Solutions GmbH",
     "description": "Energy Meter AS1440",
 
     "driver": "smartmeter",

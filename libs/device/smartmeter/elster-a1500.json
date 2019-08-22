@@ -1,7 +1,7 @@
 {
     "name": "A1500",
     "category": "Meter",
-    "group": "Elster",
+    "group": "Elster Solutions GmbH",
     "description": "Energy Meter A1500",
 
     "driver": "smartmeter",
