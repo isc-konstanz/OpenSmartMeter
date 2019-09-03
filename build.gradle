@@ -140,22 +140,23 @@ task distribute(type: Tar) {
   compression = Compression.GZIP
   archiveName = project.name + '-' + projectVersion + '.tar.gz'
 
-  from('build') {
-    include 'libs/*' + projectVersion + '*.jar'
-  }
-  from('./') {
-    include 'LICENSE**'
-    include 'NOTICE**'
-    include 'conf/**'
-    include 'libs/**'
-    include 'licenses/**'
-  }
-
-  into('licenses') {
-    for (Project distributionProject: distributionProjects) {
-      from (distributionProject.getProjectDir().toString() + '/libs') {
-        exclude '**/*.jar'
-        exclude '**.jar'
+  into(project.name) {
+    from('build') {
+      include 'libs/*' + projectVersion + '*.jar'
+    }
+    from('./') {
+      include 'LICENSE**'
+      include 'NOTICE**'
+      include 'conf/**'
+      include 'libs/**'
+      include 'licenses/**'
+    }
+    into('licenses') {
+      for (Project distributionProject: distributionProjects) {
+        from (distributionProject.getProjectDir().toString() + '/libs') {
+          exclude '**/*.jar'
+          exclude '**.jar'
+        }
       }
     }
   }
