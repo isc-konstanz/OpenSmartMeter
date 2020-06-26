@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-19 ISC Konstanz
+ * Copyright 2016-20 ISC Konstanz
  *
  * This file is part of OpenSmartMeter.
  * For more information visit https://github.com/isc-konstanz/OpenSmartMeter.
@@ -24,7 +24,7 @@ def projectFullName = 'IEC62056 part 21'
 def projectDescription = 'The IEC62056-21 related code of the OpenSmartMeter project'
 
 dependencies {
-  api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+  api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.30'
   implementation group: 'org.openmuc', name: 'jrxtx', version: '1.0.1'
 }
 

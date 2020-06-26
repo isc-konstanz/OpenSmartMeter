@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-19 ISC Konstanz
+ * Copyright 2016-20 ISC Konstanz
  *
  * This file is part of OpenSmartMeter.
  * For more information visit https://github.com/isc-konstanz/OpenSmartMeter.
