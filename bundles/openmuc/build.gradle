@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-19 ISC Konstanz
+ * Copyright 2016-20 ISC Konstanz
  *
  * This file is part of OpenSmartMeter.
  * For more information visit https://github.com/isc-konstanz/OpenSmartMeter.
@@ -22,10 +22,7 @@ archivesBaseName = 'openmuc-driver-smartmeter'
 def projectFullName = 'OpenMUC Driver - SmartMeter'
 def projectDescription = 'SmartMeter driver for the OpenMUC framework.'
 
-def jsmlVersion = '1.1.2'
-
-def jsmlJar = 'jsml-'+jsmlVersion+'.jar'
-def coreJar = 'iec62056-21-'+projectVersion+'.jar'
+configurations.create('embed')
 
 dependencies {
   implementation fileTree(dir: 'libs/openmuc', include: ['*.jar'])
@@ -33,33 +30,34 @@ dependencies {
   implementation group: 'org.osgi', name: 'org.osgi.service.component.annotations', version: '1.4.0'
   implementation group: 'org.apache.felix', name: 'org.apache.felix.scr', version: '2.1.14'
 
-  implementation group: 'org.openmuc', name: 'jsml',  version: jsmlVersion
+  implementation group: 'org.openmuc', name: 'jsml',  version: '1.1.2'
+  embed          group: 'org.openmuc', name: 'jsml',  version: '1.1.2'
 
   implementation project(':core')
+  embed          project(':core')
+}
+
+def embed = configurations.embed.findAll {
+  !it.getName().matches("(slf4j).*")
+}
+
+jar {
+  into('libs') {
+    from embed
+  }
+  manifest {
+    attributes('Bundle-Name':        projectFullName,
+               'Bundle-Description': projectDescription,
+               'Bundle-ClassPath': '.,' + embed.collect { 'libs/'+it.getName() }.join(','),
+               'Import-Package':   '!org.openmuc.iec62056.*,' +
+			                       '!org.openmuc.jsml.*,' +
+                                   '*;version=0',
+               'Export-Package':   '')
+  }
 }
 
 eclipse {
   project {
     name = archivesBaseName
-  }
-}
-
-jar {
-  into('libs') {
-    from(configurations.default) {
-      include jsmlJar, coreJar
-    }
-  }
-  manifest {
-    attributes('Bundle-Name':        projectFullName,
-               'Bundle-Description': projectDescription,
-               'Bundle-ClassPath':   '.,libs/'+jsmlJar+',' +
-                                       'libs/'+coreJar,
-               'Import-Package':      '!org.openmuc.iec62056.*,' +
-			                          '!org.openmuc.jsml.*,' +
-                                       'org.openmuc.framework.*;version=0,' +
-									   'org.openmuc.jrxtx;version=0,' +
-                                       'org.slf4j;version=0',
-	           'Export-Package':     '')
   }
 }
