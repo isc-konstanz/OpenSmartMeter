@@ -38,7 +38,7 @@ dependencies {
 }
 
 def embed = configurations.embed.findAll {
-  !it.getName().matches("(slf4j).*")
+  !it.getName().matches("(slf4j|jrxtx).*")
 }
 
 jar {
