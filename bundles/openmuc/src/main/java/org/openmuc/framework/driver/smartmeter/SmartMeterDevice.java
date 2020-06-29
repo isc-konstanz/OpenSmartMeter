@@ -18,39 +18,28 @@
  * along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package org.openmuc.framework.driver.smartmeter.settings;
+package org.openmuc.framework.driver.smartmeter;
 
-import org.openmuc.framework.config.PreferenceType;
-import org.openmuc.framework.config.Preferences;
+import java.util.List;
 
-public class DeviceScanSettings extends Preferences {
+import org.openmuc.framework.config.ArgumentSyntaxException;
+import org.openmuc.framework.driver.Device;
+import org.openmuc.framework.driver.smartmeter.configs.ObisChannel;
+import org.openmuc.framework.driver.spi.ConnectionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-    public static final PreferenceType TYPE = PreferenceType.SETTINGS_SCAN_DEVICE;
+public abstract class SmartMeterDevice extends Device<ObisChannel> {
+	protected static final Logger logger = LoggerFactory.getLogger(SmartMeterDevice.class);
 
-    @Option
-    private ProtocolMode mode;
+	@Override
+	protected abstract void onConnect() throws ArgumentSyntaxException, ConnectionException;
 
-    @Option
-    private int baudRate = -1;
-
-    @Option
-    private int timeout = DeviceSettings.TIMEOUT_DEFAULT;
+	@Override
+	protected abstract void onDisconnect();
 
     @Override
-    public PreferenceType getPreferenceType() {
-        return TYPE;
-    }
-
-    public ProtocolMode getMode() {
-        return mode;
-    }
-
-    public int getBaudRate() {
-        return baudRate;
-    }
-
-    public int getTimeout() {
-    	return timeout;
-    }
+    protected abstract Object onRead(List<ObisChannel> channels, Object containerListHandle, String samplingGroup)
+            throws ConnectionException;
 
 }

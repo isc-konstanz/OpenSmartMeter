@@ -18,10 +18,12 @@
  * along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package org.openmuc.framework.driver.smartmeter.iec;
+package org.openmuc.framework.driver.smartmeter.sml;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.openmuc.framework.config.ArgumentSyntaxException;
 import org.openmuc.framework.config.ScanException;
@@ -31,71 +33,84 @@ import org.openmuc.framework.driver.smartmeter.configs.Configurations;
 import org.openmuc.framework.driver.smartmeter.configs.ObisChannel;
 import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
-import org.openmuc.iec62056.Iec62056;
-import org.openmuc.iec62056.Iec62056Builder;
+import org.openmuc.jrxtx.DataBits;
+import org.openmuc.jrxtx.FlowControl;
+import org.openmuc.jrxtx.Parity;
+import org.openmuc.jrxtx.SerialPortBuilder;
+import org.openmuc.jrxtx.StopBits;
 
-public class ModeDListener extends SmartMeterDevice {
+public class SmlDevice extends SmartMeterDevice {
 
     private final Configurations configs;
 
-    private Iec62056Builder builder;
-    private Iec62056 connection;
+    private SmlListener listener;
 
-    private IecListener listener;
+    private ExecutorService executor;
 
-    public ModeDListener(Configurations configs) {
+    public SmlDevice(Configurations configs) {
     	this.configs = configs;
     }
 
     @Override
     protected void onCreate() {
-        builder = Iec62056Builder.create(configs.getSerialPort())
-                .setDeviceAddress(configs.getAddress())
-        		.setPassword(configs.getPassword())
-                .setMsgStartChars(configs.getMsgStartChars())
-                .enableBaudRateHandshake(configs.hasHandshake())
-                .setBaudRateChangeDelay(configs.getBaudRateChangeDelay())
-                .setBaudRate(configs.getBaudRate())
-				.setTimeout(configs.getTimeout());
+        executor = Executors.newSingleThreadExecutor();
     }
 
 	@Override
     protected ChannelScanner onCreateScanner(String settings) 
             throws UnsupportedOperationException, ArgumentSyntaxException, ScanException, ConnectionException {
         
-		return new IecScanner(listener.dataSets);
+		return new SmlScanner(listener.entries);
     }
 
 	@Override
     protected void onConnect() throws ArgumentSyntaxException, ConnectionException {
+    	int baudRate = configs.getBaudRate();
+        if (baudRate < 0) {
+            baudRate = 9600;
+        }
         try {
-        	listener = new IecListener(this);
-			connection = builder.build();
-			connection.listen(listener);
-			
+	        SerialPortBuilder serialPortBuilder = SerialPortBuilder.newBuilder(configs.getSerialPort());
+	        serialPortBuilder.setBaudRate(baudRate)
+	                .setDataBits(DataBits.DATABITS_8)
+	                .setStopBits(StopBits.STOPBITS_1)
+	                .setParity(Parity.NONE)
+	                .setFlowControl(FlowControl.RTS_CTS);
+	        
+	        listener = new SmlListener(this, serialPortBuilder.build(), baudRate);
+	        executor.execute(listener);
+	        
 		} catch (IOException e) {
 			throw new ConnectionException(e);
 		}
     }
 
-	@Override
-	protected void onDisconnect() {
-    	connection.close();
-	}
+    @Override
+    public void onDisconnect() {
+        if (listener != null) {
+            listener.stop();
+            listener = null;
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        executor.shutdown();
+    }
 
     @Override
     public void onStartListening(List<ObisChannel> channels, RecordsReceivedListener listener)
             throws UnsupportedOperationException, ConnectionException {
         
-    	this.listener.register(listener, channels);
+        this.listener.register(listener, channels);
     }
 
-    @Override
-    public Object onRead(List<ObisChannel> channels, Object containerListHandle, String samplingGroup)
-            throws UnsupportedOperationException, ConnectionException {
+	@Override
+	protected Object onRead(List<ObisChannel> channels, Object containerListHandle, String samplingGroup)
+			throws ConnectionException {
         
-    	this.listener.parseDataSets(channels);
-        return null;
+    	this.listener.parseEntries(channels);
+    	return null;
     }
 
 }

@@ -22,6 +22,7 @@ package org.openmuc.framework.driver.smartmeter.sml;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.Map;
 import org.openmuc.framework.data.Flag;
 import org.openmuc.framework.data.Record;
 import org.openmuc.framework.driver.smartmeter.SmartMeterDriver;
+import org.openmuc.framework.driver.smartmeter.configs.ObisChannel;
 import org.openmuc.framework.driver.spi.ChannelRecordContainer;
 import org.openmuc.framework.driver.spi.Connection;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
@@ -48,7 +50,7 @@ public class SmlListener implements Runnable {
 
     private Connection context;
     private RecordsReceivedListener listener;
-    private List<ChannelRecordContainer> containers;
+    private List<ObisChannel> channels;
 
     private final SerialPort serialPort;
     private final SerialReceiver receiver;
@@ -63,13 +65,13 @@ public class SmlListener implements Runnable {
         this.receiver = new SerialReceiver(serialPort);
     }
 
-    public synchronized void register(RecordsReceivedListener listener, List<ChannelRecordContainer> containers) {
-        this.containers = containers;
+    public synchronized void register(RecordsReceivedListener listener, List<ObisChannel> channels) {
+        this.channels = channels;
         this.listener = listener;
     }
 
     public synchronized void deregister() {
-        containers = null;
+        channels = null;
         listener = null;
     }
 
@@ -93,13 +95,13 @@ public class SmlListener implements Runnable {
             try {
                 readEntries();
                 if (listener != null) {
-                	listener.newRecords(parseEntries(containers));
+                	listener.newRecords(parseEntries(channels));
                 }
             } catch (InterruptedIOException e) {
             } catch (IOException e) {
             	logger.warn("Error while reading SML entries: {}", e.getMessage());
                 if (listener != null) {
-                    listener.connectionInterrupted(SmartMeterDriver.info.getId(), context);
+                    listener.connectionInterrupted(SmartMeterDriver.ID, context);
                 }
             }
         }
@@ -133,13 +135,15 @@ public class SmlListener implements Runnable {
         }
     }
 
-    public synchronized List<ChannelRecordContainer> parseEntries(List<ChannelRecordContainer> containers) {
-        for (ChannelRecordContainer container : containers) {
-        	Record record = entries.get(container.getChannelAddress());
+    public synchronized List<ChannelRecordContainer> parseEntries(List<ObisChannel> channels) {
+    	List<ChannelRecordContainer> containers = new ArrayList<ChannelRecordContainer>();
+        for (ObisChannel channel : channels) {
+        	Record record = entries.get(channel.getCode());
         	if (record == null) {
                 record = new Record(Flag.NO_VALUE_RECEIVED_YET);
         	}
-        	container.setRecord(record);
+        	channel.setRecord(record);
+        	containers.add(channel);
         }
         return containers;
     }
