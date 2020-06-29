@@ -20,7 +20,7 @@
  */
 project.ext {
 
-  projectVersion = '2.1.0'
+  projectVersion = '2.2.0'
 
   projectGroup = 'org.openmuc'
 
