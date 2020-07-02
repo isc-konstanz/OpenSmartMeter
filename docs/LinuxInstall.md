@@ -14,7 +14,7 @@ To install the OSGi bundle, simply download the latest release tarball and move 
 wget --quiet --show-progress https://github.com/isc-konstanz/OpenSmartMeter/releases/download/v1.0.0/OpenSmartMeter-1.0.0.tar.gz
 tar -xzf OpenSmartMeter-1.0.0.tar.gz
 cd OpenSmartMeter*
-mv ./libs/openmuc-driver-smartmeter-1.0.0.jar /opt/emonmuc/bundles/
+mv ./libs/openmuc-driver-smartmeter-1.0.0.jar /opt/emonmuc/bundle/
 ~~~
 
 Afterwards restart the framework, for the driver to be started
