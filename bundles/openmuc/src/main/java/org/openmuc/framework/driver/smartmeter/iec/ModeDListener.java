@@ -25,77 +25,81 @@ import java.util.List;
 
 import org.openmuc.framework.config.ArgumentSyntaxException;
 import org.openmuc.framework.config.ScanException;
-import org.openmuc.framework.driver.ChannelScanner;
+import org.openmuc.framework.config.Settings;
+import org.openmuc.framework.driver.DriverChannelScanner;
+import org.openmuc.framework.driver.DriverChannelScannerFactory;
+import org.openmuc.framework.driver.annotation.Configure;
+import org.openmuc.framework.driver.annotation.Connect;
+import org.openmuc.framework.driver.annotation.Disconnect;
+import org.openmuc.framework.driver.annotation.Listen;
+import org.openmuc.framework.driver.annotation.Read;
+import org.openmuc.framework.driver.smartmeter.ObisChannel;
 import org.openmuc.framework.driver.smartmeter.SmartMeterDevice;
-import org.openmuc.framework.driver.smartmeter.configs.Configurations;
-import org.openmuc.framework.driver.smartmeter.configs.ObisChannel;
+import org.openmuc.framework.driver.smartmeter.iec.IecScanner.DriverChannelReader;
 import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
 import org.openmuc.iec62056.Iec62056;
 import org.openmuc.iec62056.Iec62056Builder;
+import org.openmuc.iec62056.data.DataSet;
 
-public class ModeDListener extends SmartMeterDevice {
-
-    private final Configurations configs;
+public class ModeDListener extends SmartMeterDevice implements DriverChannelScannerFactory, DriverChannelReader {
 
     private Iec62056Builder builder;
     private Iec62056 connection;
 
     private IecListener listener;
 
-    public ModeDListener(Configurations configs) {
-    	this.configs = configs;
+    @Override
+    public DriverChannelScanner newScanner(Settings settings) throws ArgumentSyntaxException {
+        return new IecScanner(this);
     }
 
     @Override
-    protected void onCreate() {
-        builder = Iec62056Builder.create(configs.getSerialPort())
-                .setDeviceAddress(configs.getAddress())
-        		.setPassword(configs.getPassword())
-                .setMsgStartChars(configs.getMsgStartChars())
-                .enableBaudRateHandshake(configs.hasHandshake())
-                .setBaudRateChangeDelay(configs.getBaudRateChangeDelay())
-                .setBaudRate(configs.getBaudRate())
-				.setTimeout(configs.getTimeout());
+    public List<DataSet> getScannerDataSets() throws ConnectionException, ScanException {
+        return listener.dataSets;
     }
 
-	@Override
-    protected ChannelScanner onCreateScanner(String settings) 
-            throws UnsupportedOperationException, ArgumentSyntaxException, ScanException, ConnectionException {
-        
-		return new IecScanner(listener.dataSets);
+    @Configure
+    public void build() {
+        builder = Iec62056Builder.create(getSerialPort())
+                .setDeviceAddress(getAddress())
+                .setPassword(getPassword())
+                .setMsgStartChars(getMsgStartChars())
+                .enableBaudRateHandshake(hasHandshake())
+                .setBaudRateChangeDelay(getBaudRateChangeDelay())
+                .setBaudRate(getBaudRate())
+                .setTimeout(getTimeout());
     }
 
-	@Override
-    protected void onConnect() throws ArgumentSyntaxException, ConnectionException {
+    @Connect
+    public void connect() throws ConnectionException {
         try {
-        	listener = new IecListener(this);
-			connection = builder.build();
-			connection.listen(listener);
-			
-		} catch (IOException e) {
-			throw new ConnectionException(e);
-		}
+            listener = new IecListener(this);
+            connection = builder.build();
+            connection.listen(listener);
+            
+        } catch (IOException e) {
+            throw new ConnectionException(e);
+        }
     }
 
-	@Override
-	protected void onDisconnect() {
-    	connection.close();
-	}
-
-    @Override
-    public void onStartListening(List<ObisChannel> channels, RecordsReceivedListener listener)
-            throws UnsupportedOperationException, ConnectionException {
-        
-    	this.listener.register(listener, channels);
+    @Disconnect
+    public void close() {
+        connection.close();
     }
 
-    @Override
-    public Object onRead(List<ObisChannel> channels, Object containerListHandle, String samplingGroup)
+    @Listen
+    public void listen(List<ObisChannel> channels, RecordsReceivedListener listener)
             throws UnsupportedOperationException, ConnectionException {
         
-    	this.listener.parseDataSets(channels);
-        return null;
+        this.listener.register(listener, channels);
+    }
+
+    @Read
+    public void read(List<ObisChannel> channels, String samplingGroup)
+            throws ConnectionException {
+        
+        this.listener.parseDataSets(channels);
     }
 
 }

@@ -28,8 +28,8 @@ import org.openmuc.framework.data.DoubleValue;
 import org.openmuc.framework.data.Flag;
 import org.openmuc.framework.data.Record;
 import org.openmuc.framework.data.StringValue;
+import org.openmuc.framework.driver.smartmeter.ObisChannel;
 import org.openmuc.framework.driver.smartmeter.SmartMeterDriver;
-import org.openmuc.framework.driver.smartmeter.configs.ObisChannel;
 import org.openmuc.framework.driver.spi.ChannelRecordContainer;
 import org.openmuc.framework.driver.spi.Connection;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class IecListener implements org.openmuc.iec62056.ModeDListener {
     private final static Logger logger = LoggerFactory.getLogger(IecListener.class);
 
-    private final Connection context;
+    private final Connection connection;
 
     private RecordsReceivedListener listener;
     private List<ObisChannel> channels;
@@ -49,8 +49,8 @@ public class IecListener implements org.openmuc.iec62056.ModeDListener {
     protected long dataSetTime = -1;
     protected List<DataSet> dataSets = Collections.synchronizedList(new ArrayList<DataSet>());
 
-    public IecListener(Connection context) {
-    	this.context = context;
+    public IecListener(Connection connection) {
+    	this.connection = connection;
     }
 
     public synchronized void register(RecordsReceivedListener listener, List<ObisChannel> channels) {
@@ -77,14 +77,17 @@ public class IecListener implements org.openmuc.iec62056.ModeDListener {
 
     protected synchronized List<ChannelRecordContainer> parseDataSets(List<ObisChannel> channels) {
     	List<ChannelRecordContainer> containers = new ArrayList<ChannelRecordContainer>();
-        for (ChannelRecordContainer channel : channels) {
+    	
+        for (ObisChannel channel : channels) {
+        	ChannelRecordContainer container = (ChannelRecordContainer) channel.getTaskContainer();
+        	
         	if (dataSetTime < 0) {
                 channel.setRecord(new Record(Flag.NO_VALUE_RECEIVED_YET));
-                containers.add(channel);
+                containers.add(container);
         		continue;
         	}
             for (DataSet dataSet : dataSets) {
-                if (dataSet.getAddress().equals(channel.getChannelAddress())) {
+                if (dataSet.getAddress().equals(container.getChannelAddress())) {
                     String value = dataSet.getValue();
                 	if (value != null) {
                         try {
@@ -93,7 +96,7 @@ public class IecListener implements org.openmuc.iec62056.ModeDListener {
                         } catch (NumberFormatException e) {
                             channel.setRecord(new Record(new StringValue(dataSet.getValue()), dataSetTime));
                         }
-                        containers.add(channel);
+                        containers.add(container);
                     }
                     break;
                 }
@@ -106,7 +109,7 @@ public class IecListener implements org.openmuc.iec62056.ModeDListener {
     public void exceptionWhileListening(Exception e) {
     	logger.warn("Error while listening: {}", e.getMessage());
     	if (listener != null) {
-        	listener.connectionInterrupted(SmartMeterDriver.ID, context);
+        	listener.connectionInterrupted(SmartMeterDriver.ID, connection);
     	}
     }
 

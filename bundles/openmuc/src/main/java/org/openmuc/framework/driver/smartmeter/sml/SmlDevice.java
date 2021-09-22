@@ -26,11 +26,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.openmuc.framework.config.ArgumentSyntaxException;
-import org.openmuc.framework.config.ScanException;
-import org.openmuc.framework.driver.ChannelScanner;
+import org.openmuc.framework.config.Settings;
+import org.openmuc.framework.driver.DriverChannelScanner;
+import org.openmuc.framework.driver.DriverChannelScannerFactory;
+import org.openmuc.framework.driver.annotation.Connect;
+import org.openmuc.framework.driver.annotation.Disconnect;
+import org.openmuc.framework.driver.annotation.Listen;
+import org.openmuc.framework.driver.annotation.Read;
+import org.openmuc.framework.driver.smartmeter.ObisChannel;
 import org.openmuc.framework.driver.smartmeter.SmartMeterDevice;
-import org.openmuc.framework.driver.smartmeter.configs.Configurations;
-import org.openmuc.framework.driver.smartmeter.configs.ObisChannel;
 import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
 import org.openmuc.jrxtx.DataBits;
@@ -39,78 +43,64 @@ import org.openmuc.jrxtx.Parity;
 import org.openmuc.jrxtx.SerialPortBuilder;
 import org.openmuc.jrxtx.StopBits;
 
-public class SmlDevice extends SmartMeterDevice {
-
-    private final Configurations configs;
+public class SmlDevice extends SmartMeterDevice implements DriverChannelScannerFactory {
 
     private SmlListener listener;
 
     private ExecutorService executor;
 
-    public SmlDevice(Configurations configs) {
-    	this.configs = configs;
-    }
-
     @Override
-    protected void onCreate() {
-        executor = Executors.newSingleThreadExecutor();
-    }
-
-	@Override
-    protected ChannelScanner onCreateScanner(String settings) 
-            throws UnsupportedOperationException, ArgumentSyntaxException, ScanException, ConnectionException {
+    public DriverChannelScanner newScanner(Settings settings) 
+            throws ArgumentSyntaxException {
         
-		return new SmlScanner(listener.entries);
+        return new SmlScanner(listener.entries);
     }
 
-	@Override
-    protected void onConnect() throws ArgumentSyntaxException, ConnectionException {
-    	int baudRate = configs.getBaudRate();
+    @Connect
+    public void connect() throws ConnectionException {
+        this.executor = Executors.newSingleThreadExecutor();
+        
+        int baudRate = getBaudRate();
         if (baudRate < 0) {
             baudRate = 9600;
         }
         try {
-	        SerialPortBuilder serialPortBuilder = SerialPortBuilder.newBuilder(configs.getSerialPort());
-	        serialPortBuilder.setBaudRate(baudRate)
-	                .setDataBits(DataBits.DATABITS_8)
-	                .setStopBits(StopBits.STOPBITS_1)
-	                .setParity(Parity.NONE)
-	                .setFlowControl(FlowControl.RTS_CTS);
-	        
-	        listener = new SmlListener(this, serialPortBuilder.build(), baudRate);
-	        executor.execute(listener);
-	        
-		} catch (IOException e) {
-			throw new ConnectionException(e);
-		}
+            SerialPortBuilder serialPortBuilder = SerialPortBuilder.newBuilder(getSerialPort());
+            serialPortBuilder.setBaudRate(baudRate)
+                    .setDataBits(DataBits.DATABITS_8)
+                    .setStopBits(StopBits.STOPBITS_1)
+                    .setParity(Parity.NONE)
+                    .setFlowControl(FlowControl.RTS_CTS);
+            
+            listener = new SmlListener(this, serialPortBuilder.build(), baudRate);
+            executor.execute(listener);
+            
+        } catch (IOException e) {
+            throw new ConnectionException(e);
+        }
     }
 
-    @Override
-    public void onDisconnect() {
+    @Disconnect
+    public void close() {
         if (listener != null) {
             listener.stop();
             listener = null;
         }
-    }
-
-    @Override
-    public void onDestroy() {
         executor.shutdown();
     }
 
-    @Override
-    public void onStartListening(List<ObisChannel> channels, RecordsReceivedListener listener)
+    @Listen
+    public void listen(List<ObisChannel> channels, RecordsReceivedListener listener)
             throws UnsupportedOperationException, ConnectionException {
         
         this.listener.register(listener, channels);
     }
 
-	@Override
-	protected Object onRead(List<ObisChannel> channels, Object containerListHandle, String samplingGroup)
-			throws ConnectionException {
+    @Read
+    public void read(List<ObisChannel> channels, String samplingGroup) 
+            throws ConnectionException {
         
-    	this.listener.parseEntries(channels);
-    	return null;
+        this.listener.parseEntries(channels);
     }
 
 }

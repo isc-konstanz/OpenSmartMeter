@@ -20,7 +20,6 @@
  */
 package org.openmuc.framework.driver.smartmeter.sml;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -32,46 +31,46 @@ import org.openmuc.framework.data.ByteArrayValue;
 import org.openmuc.framework.data.StringValue;
 import org.openmuc.framework.data.Value;
 import org.openmuc.framework.data.ValueType;
-import org.openmuc.framework.driver.ChannelScanner;
+import org.openmuc.framework.driver.DriverChannelScanner;
 import org.openmuc.framework.driver.spi.ConnectionException;
 
-public class SmlScanner extends ChannelScanner {
+public class SmlScanner extends DriverChannelScanner {
 
     protected final Map<String, SmlRecord> entries;
 
     public SmlScanner(Map<String, SmlRecord> entries) {
-    	this.entries = entries;
+        this.entries = entries;
     }
 
-	@Override
-	public List<ChannelScanInfo> doScan() throws ArgumentSyntaxException, ScanException, ConnectionException {
-        List<ChannelScanInfo> channels = new LinkedList<ChannelScanInfo>();
+    @Override
+    protected void scan(List<ChannelScanInfo> channels)
+            throws ArgumentSyntaxException, ScanException, ConnectionException {
+        
         for (Entry<String, SmlRecord> entry : entries.entrySet()) {
-        	SmlRecord record = entry.getValue();
+            SmlRecord record = entry.getValue();
             String address = entry.getKey();
             String description = record.getFullAddress()+" ["+record.getEntry().getUnit()+"]";
             
             Value value = record.getValue();
             ValueType valueType;
             Integer valueTypeLength = null;
-        	if (value instanceof StringValue) {
-        		valueType = ValueType.STRING;
-        		valueTypeLength = value.asString().length();
+            if (value instanceof StringValue) {
+                valueType = ValueType.STRING;
+                valueTypeLength = value.asString().length();
             }
-        	else if (value instanceof ByteArrayValue) {
+            else if (value instanceof ByteArrayValue) {
                 byte[] byteValue = value.asByteArray();
                 valueTypeLength = byteValue.length;
-        		valueType = ValueType.BYTE_ARRAY;
-        	}
-        	else {
-        		valueType = ValueType.DOUBLE;
-        	}
+                valueType = ValueType.BYTE_ARRAY;
+            }
+            else {
+                valueType = ValueType.DOUBLE;
+            }
             
             boolean readable = true;
             boolean writable = false;
             channels.add(new ChannelScanInfo(address, description, valueType, valueTypeLength, readable, writable));
         }
-        return channels;
-	}
+    }
 
 }

@@ -18,7 +18,7 @@
  * along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package org.openmuc.framework.driver.smartmeter.configs;
+package org.openmuc.framework.driver.smartmeter;
 
 public enum ProtocolMode {
 

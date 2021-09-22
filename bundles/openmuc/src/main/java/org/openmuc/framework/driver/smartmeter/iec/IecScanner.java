@@ -20,43 +20,47 @@
  */
 package org.openmuc.framework.driver.smartmeter.iec;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.openmuc.framework.config.ArgumentSyntaxException;
 import org.openmuc.framework.config.ChannelScanInfo;
 import org.openmuc.framework.config.ScanException;
 import org.openmuc.framework.data.ValueType;
-import org.openmuc.framework.driver.ChannelScanner;
+import org.openmuc.framework.driver.DriverChannelScanner;
 import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.iec62056.data.DataSet;
 
-public class IecScanner extends ChannelScanner {
+public class IecScanner extends DriverChannelScanner {
 
-    protected final List<DataSet> dataSets;
+	public static interface DriverChannelReader {
+	
+		public List<DataSet> getScannerDataSets() throws ConnectionException, ScanException;
+	
+	}
+    private final DriverChannelReader reader;
 
-    public IecScanner(List<DataSet> dataSets) {
-    	this.dataSets = dataSets;
+    public IecScanner(DriverChannelReader reader) {
+        this.reader = reader;
     }
 
-	@Override
-	public List<ChannelScanInfo> doScan() throws ArgumentSyntaxException, ScanException, ConnectionException {
-        List<ChannelScanInfo> scanInfos = new ArrayList<>(dataSets.size());
-        for (DataSet dataSet : dataSets) {
+    @Override
+    protected void scan(List<ChannelScanInfo> channels)
+            throws ArgumentSyntaxException, ScanException, ConnectionException {
+        
+        for (DataSet dataSet : reader.getScannerDataSets()) {
             String description = dataSet.getAddress()+" ["+dataSet.getUnit()+"]";
             boolean readable = true;
             boolean writable = false;
             try {
                 Double.parseDouble(dataSet.getValue());
-                scanInfos.add(new ChannelScanInfo(dataSet.getAddress(), description, 
-                		ValueType.DOUBLE, null, readable, writable));
+                channels.add(new ChannelScanInfo(dataSet.getAddress(), description, 
+                        ValueType.DOUBLE, null, readable, writable));
                 
             } catch (NumberFormatException e) {
-                scanInfos.add(new ChannelScanInfo(dataSet.getAddress(), description, 
-                		ValueType.STRING, dataSet.getValue().length(), readable, writable));
+                channels.add(new ChannelScanInfo(dataSet.getAddress(), description, 
+                        ValueType.STRING, dataSet.getValue().length(), readable, writable));
             }
         }
-        return scanInfos;
-	}
+    }
 
 }

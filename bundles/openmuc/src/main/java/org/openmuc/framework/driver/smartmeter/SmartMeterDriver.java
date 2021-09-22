@@ -20,10 +20,12 @@
  */
 package org.openmuc.framework.driver.smartmeter;
 
+import org.openmuc.framework.config.Address;
 import org.openmuc.framework.config.ArgumentSyntaxException;
-import org.openmuc.framework.driver.Driver;
-import org.openmuc.framework.driver.DriverContext;
-import org.openmuc.framework.driver.smartmeter.configs.Configurations;
+import org.openmuc.framework.config.Settings;
+import org.openmuc.framework.driver.DriverActivator;
+import org.openmuc.framework.driver.DriverDeviceFactory;
+import org.openmuc.framework.driver.annotation.Driver;
 import org.openmuc.framework.driver.smartmeter.iec.ModeAbcDevice;
 import org.openmuc.framework.driver.smartmeter.iec.ModeDListener;
 import org.openmuc.framework.driver.smartmeter.sml.SmlDevice;
@@ -34,43 +36,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Component(service = DriverService.class)
-public class SmartMeterDriver extends Driver<Configurations> {
+@Driver(id = SmartMeterDriver.ID,
+        name = SmartMeterDriver.NAME, description = SmartMeterDriver.DESCRIPTION,
+        device = SmartMeterDevice.class, scanner = SmartMeterScanner.class)
+public class SmartMeterDriver extends DriverActivator implements DriverDeviceFactory {
     private final static Logger logger = LoggerFactory.getLogger(SmartMeterDriver.class);
 
     public static final String ID = "smartmeter";
-    private static final String NAME = "Smart Meter";
-    private static final String DESCRIPTION = "This driver implements the communication with metering devices " +
-    		"speaking the Smart Message Language (SML) or as an IEC 62056-21 mode A-D master, registering " + 
-    		"one or several slaves such as gas, water, heat, or electricity meters.";
+    public static final String NAME = "Smart Meter";
+    public static final String DESCRIPTION = "This driver implements the communication with metering devices " +
+            "speaking the Smart Message Language (SML) or as an IEC 62056-21 mode A-D master, registering " + 
+            "one or several slaves such as gas, water, heat, or electricity meters.";
 
     @Override
-    public String getId() {
-        return ID;
-    }
-
-    @Override
-    protected void onCreate(DriverContext context) {
-        logger.debug("IEC 62056 part 21 Driver instantiated. Expecting rxtxserial.so in: " + 
-                System.getProperty("java.library.path") + " for serial connections.");
-        
-        context.setName(NAME)
-               .setDescription(DESCRIPTION)
-			   .setDeviceScanner(SmartMeterScanner.class);
-    }
-
-    @Override
-	protected SmartMeterDevice onCreateConnection(Configurations configs) throws ArgumentSyntaxException, ConnectionException {
-        logger.debug("Connect IEC 62056 device {} {}", configs.getAddress(), configs.getSerialPort());
+    public SmartMeterDevice newDevice(Address address, Settings settings) throws ArgumentSyntaxException, ConnectionException {
+        logger.debug("Connect IEC 62056 device {}", address);
         try {
-            switch(configs.getMode()) {
+            ProtocolMode mode = ProtocolMode.valueOf(settings.getString("mode"));
+            switch(mode) {
             case SML:
-                return new SmlDevice(configs);
+                return new SmlDevice();
             case ABC:
-                return new ModeAbcDevice(configs);
+                return new ModeAbcDevice();
             case D:
-                return new ModeDListener(configs);
+                return new ModeDListener();
             default:
-                throw new ConnectionException("Smart Meter Settings invalid: "+configs.getMode());
+                throw new ConnectionException("Smart Meter Settings invalid: "+mode);
             }
         } catch (Exception e) {
             throw new ConnectionException(e.getMessage());

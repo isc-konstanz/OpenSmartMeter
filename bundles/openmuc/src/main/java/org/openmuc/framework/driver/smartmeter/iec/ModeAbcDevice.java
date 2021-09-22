@@ -27,14 +27,21 @@ import java.util.List;
 
 import org.openmuc.framework.config.ArgumentSyntaxException;
 import org.openmuc.framework.config.ScanException;
+import org.openmuc.framework.config.Settings;
 import org.openmuc.framework.data.DoubleValue;
 import org.openmuc.framework.data.Flag;
 import org.openmuc.framework.data.Record;
 import org.openmuc.framework.data.StringValue;
-import org.openmuc.framework.driver.ChannelScanner;
+import org.openmuc.framework.driver.DriverChannelScanner;
+import org.openmuc.framework.driver.DriverChannelScannerFactory;
+import org.openmuc.framework.driver.annotation.Configure;
+import org.openmuc.framework.driver.annotation.Connect;
+import org.openmuc.framework.driver.annotation.Disconnect;
+import org.openmuc.framework.driver.annotation.Listen;
+import org.openmuc.framework.driver.annotation.Read;
+import org.openmuc.framework.driver.smartmeter.ObisChannel;
 import org.openmuc.framework.driver.smartmeter.SmartMeterDevice;
-import org.openmuc.framework.driver.smartmeter.configs.Configurations;
-import org.openmuc.framework.driver.smartmeter.configs.ObisChannel;
+import org.openmuc.framework.driver.smartmeter.iec.IecScanner.DriverChannelReader;
 import org.openmuc.framework.driver.spi.ConnectionException;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
 import org.openmuc.iec62056.Iec62056;
@@ -45,96 +52,92 @@ import org.openmuc.iec62056.data.DataSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ModeAbcDevice extends SmartMeterDevice {
+public class ModeAbcDevice extends SmartMeterDevice implements DriverChannelScannerFactory, DriverChannelReader {
     private final static Logger logger = LoggerFactory.getLogger(ModeAbcDevice.class);
-
-    private final Configurations configs;
 
     private Iec62056Builder builder;
     private Iec62056 connection;
 
-    public ModeAbcDevice(Configurations configs) {
-    	this.configs = configs;
+    @Override
+    public DriverChannelScanner newScanner(Settings settings) throws ArgumentSyntaxException {
+        return new IecScanner(this);
     }
 
     @Override
-    protected void onCreate() {
-        builder = Iec62056Builder.create(configs.getSerialPort())
-                .setDeviceAddress(configs.getAddress())
-        		.setPassword(configs.getPassword())
-                .setMsgStartChars(configs.getMsgStartChars())
-                .enableBaudRateHandshake(configs.hasHandshake())
-                .setBaudRateChangeDelay(configs.getBaudRateChangeDelay())
-                .setBaudRate(configs.getBaudRate())
-				.setTimeout(configs.getTimeout());
-    }
-
-	@Override
-    protected ChannelScanner onCreateScanner(String settings) 
-            throws UnsupportedOperationException, ArgumentSyntaxException, ScanException, ConnectionException {
-
+    public List<DataSet> getScannerDataSets() throws ConnectionException, ScanException {
         List<DataSet> dataSets;
         DataMessage dataMessage;
         try {
             dataMessage = connection.read();
             
         } catch (IOException e) {
-            throw new ScanException(e);
+            throw new ConnectionException(e);
         }
         dataSets = dataMessage.getDataSets();
         if (dataSets == null) {
             throw new ScanException("Scan timed out.");
         }
-		return new IecScanner(dataSets);
+        return dataSets;
     }
 
-	@Override
-    protected void onConnect() throws ArgumentSyntaxException, ConnectionException {
+    @Configure
+    public void build() {
+        builder = Iec62056Builder.create(getSerialPort())
+                .setDeviceAddress(getAddress())
+                .setPassword(getPassword())
+                .setMsgStartChars(getMsgStartChars())
+                .enableBaudRateHandshake(hasHandshake())
+                .setBaudRateChangeDelay(getBaudRateChangeDelay())
+                .setBaudRate(getBaudRate())
+                .setTimeout(getTimeout());
+    }
+
+    @Connect
+    public void connect() throws ConnectionException {
         try {
-			connection = builder.build();
-			
-		} catch (IOException e) {
-			throw new ConnectionException(e);
-		}
+            connection = builder.build();
+            
+        } catch (IOException e) {
+            throw new ConnectionException(e);
+        }
         try {
             // FIXME: Sleep to avoid to early read after connection. Meters have some delay.
-            Thread.sleep(configs.getTimeout());
+            Thread.sleep(getTimeout());
             
         } catch (InterruptedException e) {
             logger.debug("Interrupted while waiting for port to open");
         }
-	}
+    }
 
-	@Override
-	protected void onDisconnect() {
-    	connection.close();
-	}
+    @Disconnect
+    public void close() {
+        connection.close();
+    }
 
-    @Override
-    public void onStartListening(List<ObisChannel> channels, RecordsReceivedListener listener)
+    @Listen
+    public void listen(List<ObisChannel> channels, RecordsReceivedListener listener)
             throws UnsupportedOperationException, ConnectionException {
         
         IecListener modeDListener = new IecListener(this);
         modeDListener.register(listener, channels);
         try {
-        	connection.listen(modeDListener);
+            connection.listen(modeDListener);
             
         } catch (IOException e) {
             throw new ConnectionException(e);
         }
     }
 
-	@Override
-	protected Object onRead(List<ObisChannel> channels, Object containerListHandle, String samplingGroup)
-			throws ConnectionException {
+    @Read
+    public void read(List<ObisChannel> channels, String samplingGroup) throws ConnectionException {
         List<DataSet> dataSets = null;
         DataMessage dataMessage;
-        for (int i = 0; i <= configs.getRetries(); ++i) {
+        for (int i = 0; i <= getRetries(); ++i) {
             try {
                 if (connection.getSettings().hasAuthentication()) {
-                	List<String> addresses = new ArrayList<String>(channels.size());
+                    List<String> addresses = new ArrayList<String>(channels.size());
                     for (ObisChannel channel : channels) {
-                    	addresses.add(channel.getCode());
+                        addresses.add(channel.getCode());
                     }
                     dataMessage = connection.read(addresses);
                 }
@@ -147,12 +150,12 @@ public class ModeAbcDevice extends SmartMeterDevice {
                 }
             } catch (InterruptedIOException | Iec62056Exception e) {
                 logger.warn("Reading from device failed: " + e);
-                if (i >= configs.getRetries()) {
-                	Flag flag = (e instanceof Iec62056Exception) ? Flag.DRIVER_ERROR_READ_FAILURE : Flag.DRIVER_ERROR_TIMEOUT;
+                if (i >= getRetries()) {
+                    Flag flag = (e instanceof Iec62056Exception) ? Flag.DRIVER_ERROR_READ_FAILURE : Flag.DRIVER_ERROR_TIMEOUT;
                     for (ObisChannel channel : channels) {
                         channel.setRecord(new Record(flag));
                     }
-                    return null;
+                    return;
                 }
             } catch (IOException e) {
                 for (ObisChannel channel : channels) {
@@ -179,7 +182,6 @@ public class ModeAbcDevice extends SmartMeterDevice {
                 }
             }
         }
-        return null;
-	}
+    }
 
 }

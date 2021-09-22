@@ -30,8 +30,8 @@ import java.util.Map;
 
 import org.openmuc.framework.data.Flag;
 import org.openmuc.framework.data.Record;
+import org.openmuc.framework.driver.smartmeter.ObisChannel;
 import org.openmuc.framework.driver.smartmeter.SmartMeterDriver;
-import org.openmuc.framework.driver.smartmeter.configs.ObisChannel;
 import org.openmuc.framework.driver.spi.ChannelRecordContainer;
 import org.openmuc.framework.driver.spi.Connection;
 import org.openmuc.framework.driver.spi.RecordsReceivedListener;
@@ -143,7 +143,7 @@ public class SmlListener implements Runnable {
                 record = new Record(Flag.NO_VALUE_RECEIVED_YET);
         	}
         	channel.setRecord(record);
-        	containers.add(channel);
+        	containers.add((ChannelRecordContainer) channel.getTaskContainer());
         }
         return containers;
     }
