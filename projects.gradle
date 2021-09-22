@@ -20,22 +20,28 @@
  */
 project.ext {
 
-  projectVersion = '2.2.0'
+    projectVersion = '2.3.0'
 
-  projectGroup = 'org.openmuc'
+    projectGroup = 'org.openmuc'
 
-  projectVendor = 'ISC Konstanz e.V.'
-  projectSite = 'https://github.com/isc-konstanz/OpenSmartMeter'
+    projectVendor = 'ISC Konstanz e.V.'
+    projectHomepage = 'https://isc-konstanz.de'
+    projectRepository = 'https://github.com/isc-konstanz/OpenSmartMeter'
+    projectMaintainer = 'Adrian Minde <adrian.minde@isc-konstanz.de>'
 
-  copyDependencies = false
+    copyDependencies = false
 
-  distributionProjects = subprojects.findAll {
-    it.getPath() == ':core' ||
-    it.getPath() == ':bundle'
-  }
+    distributionProjects = subprojects.findAll {
+        it.getPath() == ':core' ||
+        it.getPath() == ':openmuc-driver-smartmeter'
+    }
 
-  javadocProjects = distributionProjects.findAll {
-    it.getPath() == ':core'
-  }
+    debianProjects = subprojects.findAll {
+        it.getPath() == ':openmuc-driver-smartmeter'
+    }
+
+    javadocProjects = distributionProjects.findAll {
+        it.getPath() == ':core'
+    }
 
 }

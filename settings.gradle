@@ -18,6 +18,6 @@
  * along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-include 'core', 'bundle'
+include 'core', 'openmuc-driver-smartmeter'
 
-project(':bundle').projectDir = file('bundles/openmuc')
+project(':openmuc-driver-smartmeter').projectDir = file('bundles/openmuc')

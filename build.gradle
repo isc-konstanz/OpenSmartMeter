@@ -1,164 +1,231 @@
-/*
- * Copyright 2016-20 ISC Konstanz
- *
+/* 
+ * Copyright 2016-2021 ISC Konstanz
+ * 
  * This file is part of OpenSmartMeter.
  * For more information visit https://github.com/isc-konstanz/OpenSmartMeter.
- *
+ * 
  * OpenSmartMeter is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * OpenSmartMeter is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with OpenSmartMeter.  If not, see <http://www.gnu.org/licenses/>.
- *
+ * 
  */
+import java.nio.file.Paths
+
 buildscript {
-  repositories {
-    maven {
-      url 'https://plugins.gradle.org/m2/'
+    repositories {
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
     }
-  }
-  dependencies {
-    classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:4.1.0'
-  }
+    dependencies {
+        classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:4.1.0'
+    }
 }
 
 apply from: 'projects.gradle'
 
 def javaProjects() {
-  return allprojects.findAll { new File(it.projectDir, 'src').exists() }
+    return allprojects.findAll { new File(it.projectDir, 'src').exists() }
 }
 
 configure(javaProjects()) {
-  apply plugin: 'maven-publish'
-  apply plugin: 'java-library'
-  apply plugin: 'biz.aQute.bnd.builder'
-  apply plugin: 'eclipse'
+    apply plugin: 'maven-publish'
+    apply plugin: 'java-library'
+    apply plugin: 'biz.aQute.bnd.builder'
+    apply plugin: 'eclipse'
 
-  group = projectGroup
+    group = projectGroup
 
-  version = projectVersion
+    version = projectVersion
 
-  repositories {
-    mavenCentral()
-    mavenLocal()
-  }
-
-  dependencies {
-    testImplementation group: 'junit', name: 'junit', version: '4.12'
-  }
-
-  jar {
-    manifest {
-      archiveVersion = project.version.replace('-','.');
-      attributes('Bundle-Vendor':      projectVendor,
-                 'Bundle-DocURL':      projectSite)
+    repositories {
+        mavenCentral()
+        mavenLocal()
     }
-  }
 
-  if (!project.properties.containsKey('javaVersion')) {
-    project.ext {
-      javaVersion = '1.8'
+    dependencies {
+        testImplementation group: 'junit', name: 'junit', version: '4.12'
     }
-  }
 
-  sourceCompatibility = javaVersion
-  targetCompatibility = javaVersion
-
-  task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-  }
-
-  task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-  }
-
-  task jarAll(type: Copy) {
-    // Include the jar file created, as well as all artifacts:
-    from jar
-    from sourcesJar
-    from javadocJar
-
-    if (copyDependencies) {
-      // Includes all the dependencies:
-      from configurations.default
+    jar {
+        manifest {
+            archiveVersion = project.version.replace('-','.');
+            attributes('Bundle-Vendor': projectVendor,
+                       'Bundle-DocURL': projectRepository)
+        }
     }
-    into rootDir.getPath() + '/build/libs'
-  }
 
-  build.dependsOn { jarAll }
+    if (!project.properties.containsKey('javaVersion')) {
+        project.ext {
+            javaVersion = '1.8'
+        }
+    }
 
-  eclipse.pathVariables([GRADLE_USER_HOME:file(gradle.gradleUserHomeDir)])
-  tasks.eclipse.dependsOn(cleanEclipse)
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
 
-  artifacts {
-    archives sourcesJar
-    archives javadocJar
-  }
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
 
-  javadoc {
-    exclude '**/internal/**'
-    exclude '**/java-gen/**'
-    exclude '**/app/**'
-  }
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    task jarAll(type: Copy) {
+        // Include the jar file created, as well as all artifacts:
+        from jar
+        from sourcesJar
+        from javadocJar
+
+        if (copyDependencies) {
+            // Includes all the dependencies:
+            from configurations.default
+        }
+        into rootDir.getPath() + '/build/libs'
+    }
+
+    build.dependsOn { jarAll }
+
+    eclipse.pathVariables([GRADLE_USER_HOME:file(gradle.gradleUserHomeDir)])
+    tasks.eclipse.dependsOn(cleanEclipse)
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+    }
+
+    javadoc {
+        exclude '**/internal/**'
+        exclude '**/java-gen/**'
+        exclude '**/app/**'
+    }
 }
 
 task javadocClean(type: Delete) {
-  delete rootDir.getPath() + '/docs/javadoc'
+    delete rootDir.getPath() + '/docs/javadoc'
 }
 
 task javadocAll(type: Javadoc) {
-  dependsOn(javadocClean)
-  source javadocProjects.collect {
-    project -> project.sourceSets.main.allJava
-  }
-  exclude '**/internal/**'
-  exclude '**/java-gen/**'
-  exclude '**/app/**'
+    dependsOn(javadocClean)
+    source javadocProjects.collect {
+        project -> project.sourceSets.main.allJava
+    }
+    exclude '**/internal/**'
+    exclude '**/java-gen/**'
+    exclude '**/app/**'
 
-  destinationDir = new File(rootDir, 'docs/javadoc')
+    destinationDir = new File(rootDir, 'docs/javadoc')
 
-  classpath = files(javadocProjects.collect { project ->
-    project.sourceSets.main.compileClasspath })
+    classpath = files(javadocProjects.collect { project ->
+        project.sourceSets.main.compileClasspath })
 
-  classpath += files(javadocProjects.collect { project ->
-    project.sourceSets.main.output })
+    classpath += files(javadocProjects.collect { project ->
+        project.sourceSets.main.output })
+}
+
+String projectReplace(String line, String projectName, String projectDesc, projectDepends) {
+	return line.replaceAll('<package>', projectName)
+               .replaceAll('<description>', projectDesc)
+               .replaceAll('<depends>', projectDepends)
+               .replaceAll('<version>', projectVersion)
+               .replaceAll('<maintainer>', projectMaintainer)
+               .replaceAll('<repository>', projectRepository)
+               .replaceAll('<homepage>', projectHomepage)
+}
+
+task debianClean(type: Delete) {
+    delete Paths.get(rootDir.getPath(), 'build', 'dpkg')
+    followSymlinks = true
+}
+
+task packages {
+    dependsOn(debianProjects.build)
+    dependsOn(debianClean)
+    doLast {
+        for (Project project: debianProjects) {
+            if (project.getProjectDir().equals(getProjectDir())) {
+                continue
+            }
+            def projectName = project.name.toLowerCase()
+            def projectDesc = project.ext.projectDescription
+            def projectDir = project.getProjectDir().getPath()
+            def projectPackage = Paths.get(rootDir.getPath(), 'build', 'dpkg', projectName + '-' + projectVersion).toString()
+            def projectBundles = Paths.get(projectPackage, 'bundle').toString()
+            
+            def projectDepends = project.configurations.runtimeClasspath { transitive = false }
+								                       .findAll { it.getName().startsWith('openmuc') }
+								                       .collect { it.getName().replaceAll('openmuc-core-.*jar', 'openmuc-core')
+								                                              .replaceAll('-[0-9].*jar', '') }.unique().join(', ')
+            
+			copy {
+				//from project.configurations.default
+				from project.configurations.default.getAllArtifacts().getFiles()
+				into Paths.get(projectPackage, 'bundle').toString()
+			}
+			copy {
+                from Paths.get(rootDir.getPath(), 'debian')
+                into Paths.get(projectPackage, 'debian')
+                filter {
+                    line -> projectReplace(line, projectName, projectDesc, projectDepends)
+                }
+            }
+			def packageDir = Paths.get(projectDir, 'pkg').toString()
+            if (new File(packageDir).exists()) {
+                copy {
+                    from Paths.get(projectDir, 'pkg')
+                    into Paths.get(projectPackage)
+                    filter {
+                        line -> projectReplace(line, projectName, projectDesc, projectDepends)
+                    }
+                    exclude '*.gradle'
+                }
+				def gradleFile = new File(packageDir, 'debian.gradle')
+				if (gradleFile.exists()) {
+					apply from: gradleFile.getPath()
+				}
+            }
+        }
+    }
 }
 
 task distribute(type: Tar) {
-  dependsOn(distributionProjects.build)
-  dependsOn(javadocAll)
+    dependsOn(distributionProjects.build)
+    dependsOn(javadocAll)
 
-  compression = Compression.GZIP
-  archiveFileName = project.name + '-' + projectVersion + '.tar.gz'
+    compression = Compression.GZIP
+    archiveFileName = project.name + '-' + projectVersion + '.tar.gz'
 
-  into(project.name) {
-    from('build') {
-      include 'libs/*' + projectVersion + '*.jar'
-    }
-    from('./') {
-      include 'LICENSE**'
-      include 'NOTICE**'
-      include 'conf/**'
-      include 'libs/**'
-      include 'licenses/**'
-    }
-    into('licenses') {
-      for (Project distributionProject: distributionProjects) {
-        from (distributionProject.getProjectDir().toString() + '/libs') {
-          exclude '**/*.jar'
-          exclude '**.jar'
+    into(project.name) {
+        from('build') {
+            include 'libs/*' + projectVersion + '*.jar'
         }
-      }
+        from('./') {
+            include 'LICENSE**'
+            include 'NOTICE**'
+            include 'conf/**'
+            include 'libs/**'
+            include 'licenses/**'
+        }
+        into('licenses') {
+            for (Project distributionProject: distributionProjects) {
+                from (distributionProject.getProjectDir().toString() + '/libs') {
+                    exclude '**/*.jar'
+                    exclude '**.jar'
+                }
+            }
+        }
     }
-  }
-  destinationDirectory = file('build/dist/')
+    destinationDirectory = file('build/dist/')
 }

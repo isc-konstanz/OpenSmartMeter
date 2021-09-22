@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+# Set permissions of the bundle jar
+chown muc:muc /opt/openmuc/bundle/<package>-<version>.jar
+
+#DEBHELPER#
+
+# Start service if still idle
+if ! systemctl is-active --quiet openmuc; then
+    systemctl start openmuc
+fi
+
+exit 0

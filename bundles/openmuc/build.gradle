@@ -19,9 +19,10 @@
  *
  */
 archivesBaseName = 'openmuc-driver-smartmeter'
-def projectFullName = 'OpenMUC Driver - SmartMeter'
-def projectDescription = 'SmartMeter driver for the OpenMUC framework.'
-
+project.ext {
+    projectFullName = 'OpenMUC Driver - SmartMeter'
+    projectDescription = 'SmartMeter driver for the OpenMUC framework.'
+}
 configurations.create('embed')
 
 dependencies {

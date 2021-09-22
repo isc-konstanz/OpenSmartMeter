@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+#DEBHELPER#
+
+# Stop service if still running
+if systemctl is-active --quiet openmuc; then
+    systemctl stop openmuc
+fi
+
+exit 0

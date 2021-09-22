@@ -19,9 +19,11 @@
  *
  */
 archivesBaseName = 'iec62056-21'
-def projectName = 'IEC62056-21'
-def projectFullName = 'IEC62056 part 21'
-def projectDescription = 'The IEC62056-21 related code of the OpenSmartMeter project'
+project.ext {
+    projectName = 'IEC62056-21'
+    projectFullName = 'IEC62056 part 21'
+    projectDescription = 'The IEC62056-21 related code of the OpenSmartMeter project'
+}
 
 dependencies {
   api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.30'
